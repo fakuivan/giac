@@ -1,57 +1,68 @@
 #include "os.h"
 #include "giac.h"
+#include "kdisplay.h"
 
 using namespace giac;
 using namespace std;
 
-
-int main(){
+__attribute__((noinline)) int main_(int argc,char ** argv){
+  cfg_register_fileext("xw", "khicas");
+  cfg_register_fileext("py", "khicas");
+  lcd_init(lcd_type()); // clrscr();
+#ifdef MICROPY_LIB
+  mp_stack_ctrl_init();
+  // python_heap=micropy_init(128*1024,1024*1024);
+  // if (!python_heap) return 1;
+#endif
   vx_var=identificateur("x");
-  clrscr();
-  giac::context c;
-#if 0
-  for (unsigned i=0;i<32;++i)
-    COUT << endl;
-  char *value=0,saved[1024]="factor(x^4-1)",ans[1024];
-  giac::gen g,savedg;
-  for (unsigned i=0;;++i){
-    if (value) free(value);
-    if (show_msg_user_input("Expression? empty leaves",print_INT_(i).c_str(),saved,&value)==-1)
-      return 0;
-    g=giac::gen(value,&c);
-    g=eval(g,&c);
-    clrscr();
-    //if (i) COUT << i-1 << ">>" << saved << endl << savedg << endl;
-    COUT << i << ">>" << value << endl << g.print(&c) << endl;
-    strncpy(ans,g.print(&c).c_str(),1023);
-    ans[1023]=0;
-    show_msgbox(value,ans);
-    strncpy(saved,value,1023);
-    savedg=g;
-    saved[1023]=0;
-  }
+  giac::context * cptr=(giac::context *)caseval("caseval contextptr");
+#if 1
+  xcas::console_main(cptr,argc>1?argv[1]:"session");
+#ifdef MICROPY_LIB
+  mp_deinit();
+  if (python_heap)
+    free(python_heap);
+#endif
+  return 0;
 #else
   // identificateur x("x");
-  // COUT << _factor(pow(x,4,&c)-1,&c) << endl;
-  COUT << "Enter expression to eval, empty to quit, ?command for help " << endl;
+  // COUT << _factor(pow(x,4,cptr)-1,cptr) << endl;
+  COUT << "Enter expression to eval, 0 to quit, ?command for help " << endl;
   for (unsigned i=0;;++i){
     //console_cin.foreground_color(nio::COLOR_RED);
     COUT << i << ">> ";
     //console_cin.foreground_color(nio::COLOR_BLACK);
     string s;
     CIN >> s;
-    if (s.empty())
-      break;
+#ifdef MICROPY_LIB
+    micropy_eval(s.c_str()); 
+#else
     //console_cin.foreground_color(nio::COLOR_GREEN);
     ctrl_c=interrupted=false;
-    giac::gen g(s,&c);
+    giac::gen g(s,cptr);
+    if (g==0)
+      return 0;
     // COUT << "type " << g.type << endl;
     // if (g.type==_SYMB) COUT << g._SYMBptr->sommet << endl;
     // COUT << "before eval " << g << endl; wait_key_pressed();
-    g=eval(g,&c);
+    g=eval(g,cptr);
     //console_cin.foreground_color(nio::COLOR_BLUE);
     COUT << g << endl;
+#endif
   }
+#endif
+#ifdef MICROPY_LIB
+  mp_deinit();
+  if (python_heap)
+    free(python_heap);
 #endif
   return 0;
 }
+
+int main(int argc,char ** argv){
+#ifdef MICROPY_LIB
+  mp_stack_ctrl_init();
+#endif
+  main_(argc,argv);
+}
+

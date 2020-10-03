@@ -27,7 +27,7 @@ pari.h cocoa.h giac.h first.h maple.h help.h tinymt32.h tinymt32_license.h \
 static.h static_extern.h static_lexer.h static_lexer_.h\
 lexer_tab_int.h \
 static_help.h giacPCH.h giacintl.h gmp_replacements.h myostream.h \
-lpsolve.h optimization.h signalprocessing.h graphe.h graphtheory.h nautywrapper.h markup.h kdisplay.h k_csdk.h 
+lpsolve.h optimization.h signalprocessing.h graphe.h graphtheory.h nautywrapper.h markup.h kdisplay.h k_csdk.h k_defs.h
 
 noinst_LTLIBRARIES = libxcas.la
 libxcas_la_LIBADD = libgiac.la $(GUI_LIBS)
@@ -38,7 +38,7 @@ libxcas_la_SOURCES = History.cc Input.cc Xcas1.cc Equation.cc Print.cc \
 	Flve_Check_Button.cc Flve_Input.cc Flv_Style.cc Flv_Data_Source.cc \
 	Flve_Combo.cc Flv_List.cc Flv_Table.cc gl2ps.c \
 	History.h Input.h Xcas1.h Equation.h Print.h Tableur.h \
-	Editeur.h Graph.h Graph3d.h Help1.h Cfg.h \
+	Editeur.h Graph.h Graph3d.h Help1.h Cfg.h Python.cc Python.h \
 	Flv_CStyle.H  Flve_Check_Button.H  Flve_Input.H  Flv_Style.H \
 	Flv_Data_Source.H  Flve_Combo.H Flv_List.H Flv_Table.H gl2ps.h
 
@@ -69,14 +69,15 @@ EXTRA_DIST = .gdbinit xgiac pgiac prime.table gen_user \
 	mkxcas mkwcas mkgcas mkaout Makefile.wince Makefile.osx\
 	Makefile.rpm Makefile.ipaq Makefilenew.ipaq ipaq_usr.tgz \
 	Makefile.fast Makefile.win Makefile.win64 config.h.win64 Makefile.O3 Makefile.64 \
-	Makefile.nspire khicas.lua luagiac.c luabridge.cc luabridge.h \
+	Makefile.nspire README.nspire khicas.lua luagiac.c luabridge.cc luabridge.h \
 	giacnspire.cc config.h.nspire missing.c ndlessconfigure\
 	normalize.cc integrate.cc partfrac.cc factor.cc xcas.cc \
 	hist.fl hist.h hist.cxx hist.menus\
 	renee.cc renee.h cas2.cc README.ipaq README.WIN   \
 	readme.doc latex.bat xdvi.bat dvips.bat xcasfr.bat xcases.bat \
 	xcasfr.sh xcases.sh xcasen.sh mkstat mkhist mkdyn mkdyn10 mkxdyn10 \
-        update.sh update.bat opengl.cc opengl.h freeglut_stroke_roman.c\
+        update.sh update.bat \
+	opengl.cc opengl.h freeglut_stroke_roman.c mp.cc mp.h \
 	giac.pl cas2html.cc all_global_var find_global_var.cc static_init \
 	Fl_GDI_Printer.cxx  Fl_PS_Printer.cxx Fl_Gl_Choice.H \
 	casce.cc xcasce.cc xcasctrl.cc casctrl.cc \
@@ -87,7 +88,7 @@ EXTRA_DIST = .gdbinit xgiac pgiac prime.table gen_user \
 	f2c.h clapack.h blaswrap.h mklocal64 pnt_gen \
 	giac.i runme.java archive_java archive_java_linux32 archive_java_linux64  javascript.cxx giacjs.i README.javascript \
 	Makefile.jni README.jni README.nacl mkdylib mkdylib10 mkgiacpy mkgiacpy10 giac_wrap.cxx aspen_translate.h numworks_translate.h translate.cc \
-	itex2MML.* y_tab.h static_lexer_numworks.h static_lexer__numworks.h 
+	itex2MML.* y_tab.h static_lexer_numworks.h static_lexer__numworks.h k_csdk.c 
 
 bin_SCRIPTS = pgiac
 

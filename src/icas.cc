@@ -72,7 +72,10 @@ using namespace std;
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-
+#ifdef HAVE_SIGNAL_H
+#include <signal.h>
+#endif
+#include "Python.h"
 
 // using namespace giac;
 #ifdef HAVE_LIBREADLINE
@@ -217,9 +220,23 @@ void texmacs_next_input () {
   flush_stdout();
 }
 
+#define TEXMACS_IMAGE_SCALE 57.0 // percent
+#define TEXMACS_IMAGE_PADDING_ABOVE 1.75 // ex
+#define TEXMACS_IMAGE_PADDING_BELOW 1.75 // ex
+
 void ifstream_output(istream & tmpif){
   flush_stdout();
   putchar(TEXMACS_DATA_BEGIN);
+#if 0 // changes by L. Marohnić
+  printf("scheme:(padded-centered \"%gex\" \"%gex\" (document (image (tuple (raw-data \"",
+         TEXMACS_IMAGE_PADDING_ABOVE,TEXMACS_IMAGE_PADDING_BELOW);
+  char c;
+  for (int j=1;!tmpif.eof();++j){
+    tmpif.get(c);
+    putchar(c);
+  }
+  printf("\") \"eps\") \"%g%%\" \"\" \"\" \"\")))",TEXMACS_IMAGE_SCALE);
+#else
   printf("ps:");
   char c;
   for (int j=1;!tmpif.eof();++j){
@@ -229,6 +246,7 @@ void ifstream_output(istream & tmpif){
       flush_stdout();
   }
   putchar('\n');
+#endif
   putchar(TEXMACS_DATA_END);
   flush_stdout();
 }
@@ -236,6 +254,52 @@ void ifstream_output(istream & tmpif){
 
 
 void texmacs_graph_output(const giac::gen & g,giac::gen & gg,std::string & figfilename,int file_type,const giac::context * contextptr){
+#if 1 // changes by L. Marohnić
+  char buf[L_tmpnam];
+  bool has_temp_file=(tmpnam(buf)!=NULL);
+  string tmpname(has_temp_file?buf:"casgraph"),ext=".eps",extc="-cleaned.eps";
+  if (!xcas::fltk_view(g,gg,tmpname+ext,figfilename,file_type,contextptr)){
+    putchar(TEXMACS_DATA_BEGIN);
+    printf("verbatim:Plot cancelled or unable to plot\n");
+    putchar(TEXMACS_DATA_END);
+    flush_stdout();
+      return;
+  }
+  if (0  && figfilename.empty()){
+    putchar(TEXMACS_DATA_BEGIN);
+    if (gg.is_symb_of_sommet(giac::at_program))
+      printf("verbatim:%s\n",gg.print().c_str());
+    else {
+      if (gg.type==giac::_STRNG)
+        printf("verbatim:%s\n",gg._STRNGptr->c_str());
+      else 
+        printf("scheme:(document (math (with \"math-display\" \"true\" %s)))",giac::gen2scm(gg,giac::context0).c_str());
+    }
+    putchar(TEXMACS_DATA_END);
+    flush_stdout();
+  }
+  else {
+    bool cleaned=false;
+    if (system(NULL)) {
+      int status;
+      status=system(("eps2eps "+tmpname+ext+" "+tmpname+extc).c_str());
+      if (status!=-1 && WEXITSTATUS(status)==0)
+        cleaned=true;
+    }
+    ifstream tmpif((tmpname+(cleaned?extc:ext)).c_str());
+    ifstream_output(tmpif); // send PS to TeXmacs
+    // remove temporary files:
+    bool remove_fail=false;
+    if (remove((tmpname+ext).c_str())!=0)
+      remove_fail=true;
+    if (cleaned) {
+      if (remove((tmpname+extc).c_str())!=0)
+        remove_fail=true;
+    }
+    if (remove_fail)
+      cerr << "Warning: failed to remove temporary file(s)\n";
+  }
+#else
   if (!xcas::fltk_view(g,gg,"casgraph.eps",figfilename,file_type,contextptr)){
     putchar(TEXMACS_DATA_BEGIN);
     printf("verbatim: Plot cancelled or unable to plot\n");
@@ -272,11 +336,35 @@ void texmacs_graph_output(const giac::gen & g,giac::gen & gg,std::string & figfi
     // ofstream log("log");
     // log << g << '\n';
   }
+  #endif
 }
 
 void texmacs_output(const giac::gen & g,giac::gen & gg,bool reading_file,int no,const giac::context * contextptr){
   giac::history_in(contextptr).push_back(g);
   giac::history_out(contextptr).push_back(gg);
+#if 1 // changes by L. Marohnić
+  if (reading_file){
+    putchar(TEXMACS_DATA_BEGIN);
+    printf("verbatim:%s\n",g.print().c_str());
+    putchar(TEXMACS_DATA_END);
+    flush_stdout();
+  }
+  int graph_output=graph_output_type(gg);
+  if (graph_output){
+    string filename="";
+    texmacs_graph_output(g,gg,filename,0,contextptr);
+    return;
+  }
+  if (reading_file && gg.is_symb_of_sommet(giac::at_program))
+     return; 
+  if (g.is_symb_of_sommet(giac::at_nodisp))
+    return;
+  putchar(TEXMACS_DATA_BEGIN);
+  if (gg.type==giac::_STRNG)
+    printf("verbatim:%s\n",gg._STRNGptr->c_str());
+  else 
+    printf("scheme:(document (math (with \"math-display\" \"true\" %s)))",giac::gen2scm(gg,giac::context0).c_str());
+#else
   if (reading_file){
     putchar(TEXMACS_DATA_BEGIN);
     printf("verbatim: %s\n",g.print().c_str());
@@ -305,8 +393,8 @@ void texmacs_output(const giac::gen & g,giac::gen & gg,bool reading_file,int no,
     else 
       printf("latex:\\[ %s \\]",giac::gen2tex(gg,giac::context0).c_str());
   }
+#endif
   putchar(TEXMACS_DATA_END);
-  // putchar(TEXMACS_DATA_END);
   flush_stdout();
 }
 
@@ -951,6 +1039,39 @@ void pgiac(std::string infile,std::string outfile,std::ostream * checkptr,std::o
 }
 #endif
 
+int micropy_evaled(string & s,const giac::context * contextptr){
+#ifdef HAVE_LIBMICROPYTHON
+  if (python_compat(contextptr) & 4){
+    const char * ptr=s.c_str();
+    while (*ptr==' ')
+      ++ptr;
+    bool gr= strcmp(ptr,"show()")==0 || strcmp(ptr,",")==0;
+    bool pix =strcmp(ptr,";")==0;
+    bool turt=strcmp(ptr,".")==0;
+    if (!gr && !pix && !turt){
+      giac::python_contextptr=contextptr;
+      python_console="";
+      int i=micropy_ck_eval(s.c_str());
+      cout << python_console ;
+      return true;
+    }
+    giac::context * cascontextptr=(giac::context *)giac::caseval("caseval contextptr");
+    if (gr){
+      history_plot(contextptr)=history_plot(cascontextptr);
+      s="show()";
+    }
+    if (pix)
+      s="show_pixels()";
+    if (freezeturtle || turt){
+      turtle(contextptr)=turtle(cascontextptr);
+      turtle_stack(contextptr)=turtle_stack(cascontextptr);
+      s="avance(0)";
+    }
+  }
+#endif
+  return false;
+}
+
 int main(int ARGC, char *ARGV[]){    
   //giac::step_infolevel=1;
   cerr << "// Maximum number of parallel threads " << giac::threads << '\n';
@@ -1582,7 +1703,7 @@ int main(int ARGC, char *ARGV[]){
     struct tms start, end;  
     using_history();
     cout << "Welcome to giac readline interface" << '\n';
-    cout << "(c) 2001,2018 B. Parisse & others" << '\n';
+    cout << "(c) 2001,2020 B. Parisse & others" << '\n';
     cout << "Homepage http://www-fourier.ujf-grenoble.fr/~parisse/giac.html" << '\n';
     cout << "Released under the GPL license 3.0 or above" << '\n';
     cout << "See http://www.gnu.org for license details" << '\n';
@@ -1596,6 +1717,18 @@ int main(int ARGC, char *ARGV[]){
 	break;
       string s(res);
       int bs=s.size();
+      if (s=="python"){
+	python_compat(4 | python_compat(contextptr),contextptr);
+	printf("%s\n","MicroPython 1.12");
+	continue;
+      }
+      if (s=="xcas"){
+	python_compat(python_compat(contextptr)&3,contextptr);
+	printf("%s\n","Giac 1.6.0");
+	continue;
+      }
+      if (micropy_evaled(s,contextptr))
+	continue;
       if (insage && bs && s[bs-1]==63){
 	string complete_string(s.substr(0,bs-1));
 	// search non ascii char starting from the end
@@ -1848,7 +1981,7 @@ int main(int ARGC, char *ARGV[]){
 #ifdef WITH_GNUPLOT
   giac::kill_gnuplot();
 #endif
-  if (getenv("GIAC_RELEASE"))
+  if (getenv("GIAC_RELEASE")) // for valgrind
     giac::release_globals();
   return resultat;
 }

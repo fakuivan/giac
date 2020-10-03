@@ -285,6 +285,8 @@ namespace giac {
   extern const unary_function_ptr * const  at_atan2 ;
   extern const unary_function_ptr * const  at_get_pixel ;
   gen _set_pixel(const gen & args,GIAC_CONTEXT);
+  gen _get_pixel(const gen & args,GIAC_CONTEXT);
+  gen _draw_string(const gen & a_,GIAC_CONTEXT);
   extern const unary_function_ptr * const  at_set_pixel ;
   extern const unary_function_ptr * const  at_strip ;
   extern const unary_function_ptr * const  at_lower ;
@@ -300,6 +302,11 @@ namespace giac {
   extern const unary_function_ptr * const  at_confidence;
   extern const unary_function_ptr * const  at_sin_regression;
   extern const unary_function_ptr * const  at_sin_regression_plot;
+  extern const unary_function_ptr * const  at_locate ;
+  int rgb888to565(int c);
+  int rgb565to888(int c);
+
+  gen _show_pixels(const gen & args,GIAC_CONTEXT);
   gen _rgb(const gen & args,GIAC_CONTEXT);
   gen _charpoly(const gen & args,GIAC_CONTEXT);
   extern bool freeze;

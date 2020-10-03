@@ -33,10 +33,15 @@ namespace giac {
   // true if ch is alphanumeric
   bool isalphan(char ch);
 
+  bool is_python_builtin(const char * s);
+  bool is_python_keyword(const char * s);
+  extern const char * python_keywords[];
+  extern const char * const python_builtins[];
+
   // search if cmd_name has static describing help
   // NB: cmd_name may be localized but related is not localized
-  bool has_static_help(const char * cmd_name,int lang,const char * & howto,const char * & syntax,const char * & related,const char * & examples);
-
+  bool has_static_help(const char * & cmd_name,int lang,const char * & howto,const char * & syntax,const char * & examples,const char * & related);
+  
   // search for s in a read-opened FILE f
   bool grep(FILE * f,const std::string & s);
   // search for s in filename

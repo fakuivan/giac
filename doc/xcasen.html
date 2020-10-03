@@ -6,7 +6,7 @@
   <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
   <meta name="keywords" content="xcas, firefox, browser, computer algebra system, online, offline">
   <title>
-    Session_Xcas
+    xcas or python : change interpreter
   </title>
   <style>
     html {
@@ -277,6 +277,7 @@
             if (intKeyCode == KEY_T) {
                 $id('progbuttons').style.display = 'block';
                 $id('boutons_tortue').style.display = 'block';
+                UI.hide_show_xcas('boutons_tortue_xcas');
                 done = true;
             }
             if (intKeyCode == KEY_P) {
@@ -319,7 +320,7 @@
 </div>
 <div id="startup1">
   Welcome to Xcas for Firefox or compatible browser
-  (c) 2018, B. Parisse and R. De Graeve, Institut Fourier,
+  (c) 2020, B. Parisse and R. De Graeve, Institut Fourier,
   Universit&eacute; de Grenoble.
 </div>
 <div id="startup">
@@ -356,6 +357,10 @@
         <input type="radio" name="lang" value="radio" title="Spanish">sp
         <input type="radio" name="lang" value="radio" title="Greek">el
         <input type="radio" name="lang" value="radio" title="Deutsch">de
+	<br> Export to
+        <input type="radio" name="calc" value="radio" title="Casio" checked>Casio Prizm or Fx-9750GIII
+        <input type="radio" name="calc" value="radio" title="Numworks">Numworks
+        <input type="radio" name="calc" value="radio" title="Nspire">TI Nspire CX
       </td>
     </tr>
     <tr>
@@ -371,8 +376,8 @@
 	onclick="python_mode.checked=!python_mode.checked;">
 	<input
           class="bouton" type="checkbox" name="python_mode" title="Check to enable Python syntax compatibility">,
-	^ for xor <input class="bouton" type="checkbox" name="python_xor"
-	title="If checked, ^ is bit-exclusive or in Python mode, otherwise ^ is power">,
+	MicroPython <input class="bouton" type="checkbox" name="python_xor"
+	title="If checked, interpreter is MicroPython, otherwise Xcas">,
         <input class="bouton" type="button" title="Display Python alerts" value="warnings" onclick="warnpy_mode.checked=!warnpy_mode.checked">
         <input class="bouton" type="checkbox" name="warnpy_mode"
                title="Check to display Python alerts" checked>
@@ -485,7 +490,7 @@
                   style="font-size:large"
                   title="Saving session filename.">session</textarea>
         <button id="exportbutton" class="bouton"
-                title="Export session to KhiCas"
+                title="Export session to KhiCas (Casio Prizm or Fx-9750GIII, Numworks, TI Nspire CX, to be configured in the Settings)"
                 onclick='UI.savesession(1);'>Export</button>
         </span>
 <button id="loadbutton_cookie" class="bouton"
@@ -584,6 +589,10 @@
                         <li> Linux: <a href="file:///usr/share/giac/doc/xcasen.html"
                                        target="_blank"><tt>/usr/share/giac/doc/xcasen.html</tt></a>,
                     </ul>
+		    If Xcas for Firefox does not work locally with
+		    Firefox, disable
+		    <tt>security.fileuri.strict_origin_policy</tt>
+		    in <tt>about:config</tt>.
                 </div>
             </li>
             <li style="display:inline">
@@ -815,7 +824,7 @@ If you want to see informations while a computation is running, run first
                                     Newton fractals
                                     <a href="#exec&python=0&+///We%20iterate%20Newton%20method%20to%20find%20the%20roots%20of%20a%20polynomial%20$P$,%20$z[n+1]=z[n]-P(z[n])/P'(z[n])$,%20if%20there%20is%20numeric%20convergence%20we%20color%20the%20initial%20point%20$z[0]$%20of%20the%20sequence%20with%20a%20color%20depending%20on%20the%20root%20number.%0aTwo%20versions%20are%20proposed,%20fsym%20is%20using%20complex%20conjugation%20symmetry%20to%20speedup%20computations%20by%20a%20factor%20about%202.&+function%20f(P%2Cxmin%2Cxmax%2Cymin%2Cymax%2CN%2Cmaxiter)%0A%20%20local%20z0%2Cz%2Czp%2Chx%2Chy%2Cj%2Ck%2Cl%2Cn%2Cr%2Crs%2Cres%3B%0A%20%20P%3A%3Dsymb2poly(P)%3B%0A%20%20res%3A%3Dmakelist(-(N%2B1)%5E2)%3B%0A%20%20r%3A%3Dproot(P)%3B0%3B%20%2F%2F%20f(x%5E5-1%2C-1.3%2C1.3%2C-1.3%2C1.3%2C134%2C10)%0A%20%20rs%3A%3Dsize(r)-1%3B%0A%20%20hx%3A%3Devalf(xmax-xmin)%2FN%3B%20%0A%20%20hy%3A%3Devalf(ymax-ymin)%2FN%3B%0A%20%20for%20k%20from%200%20to%20N%20do%0A%20%20%20%20z0%3A%3Dxmin%2Bi*(ymin%2Bk*hy)%3B%0A%20%20%20%20for%20j%20from%200%20to%20N%20do%0A%20%20%20%20%20%20z%3A%3Dz0%3B%0A%20%20%20%20%20%20for%20l%20from%200%20to%20maxiter%20do%0A%20%20%20%20%20%20%20%20if%20distance((z%3A%3Dhorner(P%2C(zp%3A%3Dhorner(P%2Cz%2Cnewton))%2Cnewton))%2Czp)%3C1e-4%20or%20abs(z)%3E1e20%20then%20%0A%20%20%20%20%20%20%20%20%20%20break%3B%20%0A%20%20%20%20%20%20%20%20fi%3B%0A%20%20%20%20%20%20od%3B%0A%20%20%20%20%20%20if%20z%3D%3Dundef%20then%20continue%3B%20fi%3B%0A%20%20%20%20%20%20for%20n%20from%200%20to%20rs%20do%0A%20%20%20%20%20%20%20%20if%20distance(z%2Cr%5Bn%5D)%3C1e-4%20then%20break%3B%20fi%3B%0A%20%20%20%20%20%20od%3B%0A%20%20%20%20%20%20res.append(pixon(j%2Ck%2C256%2B25*n%2Bl))%3B%0A%20%20%20%20%20%20z0%3A%3Dz0%2Bhx%3B%0A%20%20%20%20od%3B%0A%20%20od%3B%0A%20%20return%20res%3B%0Affunction%3A%3B&+function%20fsym(P%2Cxmin%2Cxmax%2Cymin%2CN%2Cmaxiter)%0A%20%20local%20z0%2Cz%2Czp%2Chx%2Chy%2Cj%2Ck%2Cl%2Cn%2Cr%2Crs%2Crimag%2Cres1%2Cres2%3B%0A%20%20P%3A%3Dsymb2poly(P)%3B%0A%20%20if%20size(im(P))!%3D0%20then%20return%20%22Polynomial%20must%20have%20real%20coefficients%22%3B%20fi%3B%0A%20%20r%3A%3Dproot(P)%3B%0A%20%20%2F%2F%20extract%20roots%20with%20imaginary%20part%20%3E%3D0%2C%20put%20reals%20at%20the%20end%0A%20%20res1%3A%3Dselect(x-%3Eim(x)%3E0%2Cr)%3B%0A%20%20rimag%3A%3D2*size(res1)%3B%0A%20%20res2%3A%3Dselect(x-%3Eim(x)%3D%3D0%2Cr)%3B%0A%20%20r%3A%3Dconcat(res1%2Creverse(conj(res1))%2Cres2)%3B%0A%20%20rs%3A%3Dsize(r)-1%3B%0A%20%20res1%3A%3Dmakelist(-ceil((N%2B1)%5E2%2F2))%3B%20%0A%20%20res2%3A%3Dmakelist(-ceil((N%2B1)%5E2%2F2))%3B%0A%20%20hx%3A%3Devalf(xmax-xmin)%2FN%3B%20%0A%20%20hy%3A%3Devalf(-2*ymin)%2FN%3B%0A%20%20for%20k%20from%200%20to%20N%2F2%20do%0A%20%20%20%20z0%3A%3Dxmin%2Bi*(ymin%2Bk*hy)%3B%0A%20%20%20%20for%20j%20from%200%20to%20N%20do%0A%20%20%20%20%20%20z%3A%3Dz0%3B%0A%20%20%20%20%20%20for%20l%20from%200%20to%20maxiter%20do%0A%20%20%20%20%20%20%20%20if%20distance((z%3A%3Dhorner(P%2C(zp%3A%3Dhorner(P%2Cz%2Cnewton))%2Cnewton))%2Czp)%3C1e-4%20or%20abs(z)%3E1e20%20then%20%0A%20%20%20%20%20%20%20%20%20%20break%3B%20%0A%20%20%20%20%20%20%20%20fi%3B%0A%20%20%20%20%20%20od%3B%0A%20%20%20%20%20%20if%20z%3D%3Dundef%20then%20continue%3B%20fi%3B%0A%20%20%20%20%20%20for%20n%20from%200%20to%20rs%20do%0A%20%20%20%20%20%20%20%20if%20distance(z%2Cr%5Bn%5D)%3C1e-4%20then%20break%3B%20fi%3B%0A%20%20%20%20%20%20od%3B%0A%20%20%20%20%20%20res1.append(pixon(j%2Ck%2C256%2B25*n%2Bl))%3B%0A%20%20%20%20%20%20res2.append(pixon(j%2CN-k%2C256%2B25*when(n%3E%3Drimag%2Cn%2Crimag-n-1)%2Bl))%3B%0A%20%20%20%20%20%20z0%3A%3Dz0%2Bhx%3B%0A%20%20%20%20od%3B%0A%20%20od%3B%0A%20%20return%20res1%2Cres2%3B%0Affunction%3A%3B&+pixon(1)&+fsym(x%5E5-1%2C-1.3%2C1.3%0A%2C-1.3%2C150%2C10)&+0%3B%20%2F%2F%20f(x%5E5-1%2C-1.3%2C1.3%2C-1.3%2C1.3%2C134%2C10)&"
                                        target="_blank">Xcas</a>,
-                                    <a href="#exec&python=1&+///We%20iterate%20Newton%20method%20to%20find%20the%20roots%20of%20a%20polynomial%20$P$,%20$z[n+1]=z[n]-P(z[n])/P'(z[n])$,%20if%20there%20is%20numeric%20convergence%20we%20color%20the%20initial%20point%20$z[0]$%20of%20the%20sequence%20with%20a%20color%20depending%20on%20the%20root%20number.%0aTwo%20versions%20are%20proposed%20in%20Python-compatible%20syntax,%20fsym%20is%20using%20complex%20conjugation%20symmetry%20to%20speedup%20computations%20by%20a%20factor%20about%202.&+def%20f(P%2Cxmin%2Cxmax%2Cymin%2Cymax%2CN%2Cmaxiter)%3A%0A%20%20%20%20%23%20local%20z%2Cz0%2Czp%2Chx%2Chy%2Cj%2Ck%2Cl%2Cn%2Cr%2Crs%2Cres%0A%20%20%20%20P%3Dsymb2poly(P)%0A%20%20%20%20res%3D%5B%5D%0A%20%20%20%20r%3Dproot(P)%0A%20%20%20%20rs%3Dsize(r)%0A%20%20%20%20hx%3Devalf(xmax-xmin)%2FN%0A%20%20%20%20hy%3Devalf(ymax-ymin)%2FN%0A%20%20%20%20for%20k%20in%20range(N%2B1)%3A%0A%20%20%20%20%20%20%20%20z0%3Dxmin%2Bi*(ymin%2Bk*hy)%0A%20%20%20%20%20%20%20%20for%20j%20in%20range(N%2B1)%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20z%3Dz0%0A%20%20%20%20%20%20%20%20%20%20%20%20for%20l%20in%20range(maxiter)%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20if%20distance((z%3Dhorner(P%2C(zp%3Dhorner(P%2Cz%2Cnewton))%2Cnewton))%2Czp)%3C1e-4%20or%20abs(z)%3E1e20%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20break%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20if%20z%3D%3Dundef%3A%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20continue%0A%20%20%20%20%20%20%20%20%20%20%20%20for%20n%20in%20range(rs)%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20if%20distance(z%2Cr%5Bn%5D)%3C1e-4%3A%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20break%0A%20%20%20%20%20%20%20%20%20%20%20%20res.append(pixon(j%2Ck%2C256%2B25*n%2Bl))%0A%20%20%20%20%20%20%20%20%20%20%20%20z0%3Dz0%2Bhx%0A%20%20%20%20return%20res&+def%20fsym(P%2Cxmin%2Cxmax%2Cymin%2CN%2Cmaxiter)%3A%0A%20%20%20%20%23%20local%20z0%2Cz%2Czp%2Chx%2Chy%2Cj%2Ck%2Cl%2Cn%2Cr%2Crs%2Crimag%2Cres1%2Cres2%0A%20%20%20%20P%3Dsymb2poly(P)%0A%20%20%20%20if%20size(im(P))%3C%3E0%20%3A%0A%20%20%20%20%20%20%20%20return(%22Polynomial%20must%20have%20real%20coefficients!%22)%0A%20%20%20%20r%3Dproot(P)%0A%20%20%20%20res1%3Dselect(lambda%20x%3Aim(x)%3E0%2Cr)%0A%20%20%20%20rimag%3D2*size(res1)%0A%20%20%20%20res2%3Dselect(lambda%20x%3Aim(x)%3D%3D0%2Cr)%0A%20%20%20%20r%3Dconcat(res1%2Creverse(conj(res1))%2Cres2)%0A%20%20%20%20rs%3Dsize(r)%0A%20%20%20%20res1%3D%5B%5D%0A%20%20%20%20res2%3D%5B%5D%0A%20%20%20%20hx%3Devalf(xmax-xmin)%2FN%0A%20%20%20%20hy%3Devalf(-2*ymin)%2FN%0A%20%20%20%20for%20k%20in%20range(ceil((N%2B1)%2F2))%3A%0A%20%20%20%20%20%20%20%20z0%3Dxmin%2Bi*(ymin%2Bk*hy)%0A%20%20%20%20%20%20%20%20for%20j%20in%20range(0%2CN%2B1)%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20z%3Dz0%0A%20%20%20%20%20%20%20%20%20%20%20%20for%20l%20in%20range(maxiter)%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20if%20distance((z%3Dhorner(P%2C(zp%3Dhorner(P%2Cz%2Cnewton))%2Cnewton))%2Czp)%3C0.0001%20or%20abs(z)%3E1e%2B20%20%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20break%0A%20%20%20%20%20%20%20%20%20%20%20%20if%20(z%3D%3Dundef)%20%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20continue%0A%20%20%20%20%20%20%20%20%20%20%20%20for%20n%20in%20range(rs)%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20if%20(distance(z%2Cr%5Bn%5D))%3C0.0001%20%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20break%0A%20%20%20%20%20%20%20%20%20%20%20%20res1.append(pixon(j%2Ck%2C256%2B25*n%2Bl))%0A%20%20%20%20%20%20%20%20%20%20%20%20res2.append(pixon(j%2CN-k%2C256%2B25*when(n%3E%3Drimag%2Cn%2Crimag-n-1)%2Bl))%0A%20%20%20%20%20%20%20%20%20%20%20%20z0%3Dz0%2Bhx%0A%20%20%20%20return(res1%2Cres2)&+pixon(1)&+fsym(x%5E5-1%2C-1.3%2C1.3%2C-1.3%2C150%2C10)&+0%3B%20%2F%2F%20f(x%5E5-1%2C-1.3%2C1.3%2C-1.3%2C1.3%2C134%2C10)&"
+                                    <a href="#exec&python=1&+///We%20iterate%20Newton%20method%20to%20find%20the%20roots%20of%20a%20polynomial%20$P$,%20$z[n+1]=z[n]-P(z[n])/P'(z[n])$,%20if%20there%20is%20numeric%20convergence%20we%20color%20the%20initial%20point%20$z[0]$%20of%20the%20sequence%20with%20a%20color%20depending%20on%20the%20root%20number.%0aTwo%20versions%20are%20proposed%20in%20Python-compatible%20syntax,%20fsym%20is%20using%20complex%20conjugation%20symmetry%20to%20speedup%20computations%20by%20a%20factor%20about%202.&+def%20f(P%2Cxmin%2Cxmax%2Cymin%2Cymax%2CN%2Cmaxiter)%3A%0A%20%20%20%20%23%20local%20z%2Cz0%2Czp%2Chx%2Chy%2Cj%2Ck%2Cl%2Cn%2Cr%2Crs%2Cres%0A%20%20%20%20P%3Dsymb2poly(P)%0A%20%20%20%20res%3D%5B%5D%0A%20%20%20%20r%3Dproot(P)%0A%20%20%20%20rs%3Dsize(r)%0A%20%20%20%20hx%3Devalf(xmax-xmin)%2FN%0A%20%20%20%20hy%3Devalf(ymax-ymin)%2FN%0A%20%20%20%20for%20k%20in%20range(N%2B1)%3A%0A%20%20%20%20%20%20%20%20z0%3Dxmin%2Bi*(ymin%2Bk*hy)%0A%20%20%20%20%20%20%20%20for%20j%20in%20range(N%2B1)%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20z%3Dz0%0A%20%20%20%20%20%20%20%20%20%20%20%20for%20l%20in%20range(maxiter)%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20if%20distance((z%3A%3Dhorner(P%2C(zp%3A%3Dhorner(P%2Cz%2Cnewton))%2Cnewton))%2Czp)%3C1e-4%20or%20abs(z)%3E1e20%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20break%3B%0A%20%20%20%20%20%20%20%20%20%20%20%20if%20z%3D%3Dundef%3A%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20continue%0A%20%20%20%20%20%20%20%20%20%20%20%20for%20n%20in%20range(rs)%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20if%20distance(z%2Cr%5Bn%5D)%3C1e-4%3A%20%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20break%0A%20%20%20%20%20%20%20%20%20%20%20%20res.append(pixon(j%2Ck%2C256%2B25*n%2Bl))%0A%20%20%20%20%20%20%20%20%20%20%20%20z0%3Dz0%2Bhx%0A%20%20%20%20return%20res&+def%20fsym(P%2Cxmin%2Cxmax%2Cymin%2CN%2Cmaxiter)%3A%0A%20%20%20%20%23%20local%20z0%2Cz%2Czp%2Chx%2Chy%2Cj%2Ck%2Cl%2Cn%2Cr%2Crs%2Crimag%2Cres1%2Cres2%0A%20%20%20%20P%3Dsymb2poly(P)%0A%20%20%20%20if%20size(im(P))%3C%3E0%20%3A%0A%20%20%20%20%20%20%20%20return(%22Polynomial%20must%20have%20real%20coefficients!%22)%0A%20%20%20%20r%3Dproot(P)%0A%20%20%20%20res1%3Dselect(lambda%20x%3Aim(x)%3E0%2Cr)%0A%20%20%20%20rimag%3D2*size(res1)%0A%20%20%20%20res2%3Dselect(lambda%20x%3Aim(x)%3D%3D0%2Cr)%0A%20%20%20%20r%3Dconcat(res1%2Creverse(conj(res1))%2Cres2)%0A%20%20%20%20rs%3Dsize(r)%0A%20%20%20%20res1%3D%5B%5D%0A%20%20%20%20res2%3D%5B%5D%0A%20%20%20%20hx%3Devalf(xmax-xmin)%2FN%0A%20%20%20%20hy%3Devalf(-2*ymin)%2FN%0A%20%20%20%20for%20k%20in%20range(ceil((N%2B1)%2F2))%3A%0A%20%20%20%20%20%20%20%20z0%3Dxmin%2Bi*(ymin%2Bk*hy)%0A%20%20%20%20%20%20%20%20for%20j%20in%20range(0%2CN%2B1)%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20z%3Dz0%0A%20%20%20%20%20%20%20%20%20%20%20%20for%20l%20in%20range(maxiter)%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20if%20distance((z%3A%3Dhorner(P%2C(zp%3A%3Dhorner(P%2Cz%2Cnewton))%2Cnewton))%2Czp)%3C0.0001%20or%20abs(z)%3E1e%2B20%20%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20break%0A%20%20%20%20%20%20%20%20%20%20%20%20if%20(z%3D%3Dundef)%20%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20continue%0A%20%20%20%20%20%20%20%20%20%20%20%20for%20n%20in%20range(rs)%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20if%20(distance(z%2Cr%5Bn%5D))%3C0.0001%20%3A%0A%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20%20break%0A%20%20%20%20%20%20%20%20%20%20%20%20res1.append(pixon(j%2Ck%2C256%2B25*n%2Bl))%0A%20%20%20%20%20%20%20%20%20%20%20%20res2.append(pixon(j%2CN-k%2C256%2B25*when(n%3E%3Drimag%2Cn%2Crimag-n-1)%2Bl))%0A%20%20%20%20%20%20%20%20%20%20%20%20z0%3Dz0%2Bhx%0A%20%20%20%20return(res1%2Cres2)&+pixon(1)&+fsym(x%5E5-1%2C-1.3%2C1.3%2C-1.3%2C150%2C10)&+0%3B%20%2F%2F%20f(x%5E5-1%2C-1.3%2C1.3%2C-1.3%2C1.3%2C134%2C10)&"
                                        target="_blank">Python</a>
                                 </li>
                             </ul>
@@ -1853,21 +1862,25 @@ If you want to see informations while a computation is running, run first
          value="//" onmousedown="event.preventDefault()" onClick="UI.insert(UI.focused,UI.python_mode?'#':'//');UI.funcoff();" title="comment">
   <input type="button" style="width:29px;height:35px" name="add_nlprog"
          id="add_nlprog"
-         value="[]" onmousedown="event.preventDefault()"
-         onClick="UI.hide_show($id('list_cmds'))"
+         value="cmds" onmousedown="event.preventDefault()"
+         onClick="UI.hide_show($id('list_cmds')); UI.hide_show_xcas('list_cmds_xcas'); UI.hide_show_python('python_mods');"
          title="List commands">
   <input type="button" style="width:29px;height:35px" name="add_listechaine"
          id="add_listechaine"
-         value='""' onmousedown="event.preventDefault()"
-         onClick="UI.hide_show($id('prog_cmds'));"
+         value='graph' onmousedown="event.preventDefault()"
+         onClick="UI.hide_show($id('prog_graph_cmds'));"
          title="Strings and sets commands">
   <input type="button" style="width:29px;height:35px"
          id="add_tortue"
          value="Turtle" onmousedown="event.preventDefault()"
-         onClick="var f=$id('boutons_tortue'); if (f.style.display=='none'){ f.style.display='block'; } else { f.style.display='none'; }" title="turtle commands">
+         onClick="UI.hide_show_xcas('boutons_tortue_xcas'); var f=$id('boutons_tortue'); if (f.style.display=='none'){ f.style.display='block'; } else { f.style.display='none'; }" title="turtle commands">
   <div id="list_cmds" style="display:none">
-    <button class="bouton" onclick="UI.insert(UI.focused,'seq(');">seq</button>
+    <button class="bouton" onclick="UI.insert(UI.focused,'range(');">range</button>
+    <button class="bouton" onclick="UI.insert(UI.focused,'len(');">len</button>
     <button class="bouton" onclick="UI.insert(UI.focused,'append(');">append</button>
+    <button class="bouton" onclick="UI.insert(UI.focused,'sorted(');">sort</button>
+    <div id="list_cmds_xcas">
+    <button class="bouton" onclick="UI.insert(UI.focused,'seq(');">seq</button>
     <button class="bouton" onclick="UI.insert(UI.focused,'concat(');">concat</button>
     <button class="bouton" onclick="UI.insert(UI.focused,'head(');">head</button>
     <button class="bouton" onclick="UI.insert(UI.focused,'tail(');">tail</button>
@@ -1875,13 +1888,9 @@ If you want to see informations while a computation is running, run first
     <button class="bouton" onclick="UI.insert(UI.focused,'member(');">member</button>
     <button class="bouton" onclick="UI.insert(UI.focused,'revlist(');">revlist</button>
     <button class="bouton" onclick="UI.insert(UI.focused,'mid(');">mid</button>
-    <button class="bouton" onclick="UI.insert(UI.focused,'size(');">size</button>
-    <button class="bouton" onclick="UI.insert(UI.focused,'sort(');">sort</button>
     <button class="bouton" onclick="UI.insert(UI.focused,'suppress(');">suppress</button>
     <button class="bouton" onclick="UI.insert(UI.focused,'select(');">select</button>
     <button class="bouton" onclick="UI.insert(UI.focused,'count(');">count</button>
-  </div>
-  <div id="prog_cmds" style="display:none">
     <strong>set[]</strong>
     <button class="bouton" onclick="UI.insert(UI.focused,'intersect(');">intersect</button>
     <button class="bouton" onclick="UI.insert(UI.focused,'minus(');">minus</button>
@@ -1897,28 +1906,68 @@ If you want to see informations while a computation is running, run first
     <button class="bouton" onclick="UI.insert(UI.focused,'ord(');">ord</button>
     <button class="bouton" onclick="UI.insert(UI.focused,'droit(');">droit</button>
     <button class="bouton" onclick="UI.insert(UI.focused,'string(');">string</button>
+    </div>
+    <div id="python_mods" style="display:none">
+      <br>
+    <button class="bouton" onclick="UI.insert_focused('from math import *');"><strong>math</strong></button><button class="bouton" onclick="UI.insert_focused('sqrt(');">racine</button><button class="bouton" onclick="UI.insert_focused('abs(');">abs</button><button class="bouton" onclick="UI.insert_focused('max(');">max</button><button class="bouton" onclick="UI.insert_focused('min(');">min</button><button class="bouton" onclick="UI.insert_focused('round(');">arrondi</button><button class="bouton" onclick="UI.insert_focused('floor(');">floor</button>
+    <br>
+<button class="bouton" onclick="UI.insert_focused('from cmath import *');"><strong>cmath</strong></button>
+    <button class="bouton" onclick="UI.insert_focused('from random import *');"><strong>random</strong></button><button class="bouton" onclick="UI.insert_focused('random(');">random</button><button class="bouton" onclick="UI.insert_focused('randint(');">randint</button><button class="bouton" onclick="UI.insert_focused('choice(');">choice</button>
+    <br>
+    
+    <button class="bouton" onclick="UI.insert_focused('from arit import *');"><strong>arit</strong></button><button class="bouton" onclick="UI.insert_focused('isprime(');">isprime</button><button class="bouton" onclick="UI.insert_focused('nextprime(');">nextp</button><button class="bouton" onclick="UI.insert_focused('ifactor(');">ifactor</button><button class="bouton" onclick="UI.insert_focused('gcd(');">gcd</button><button class="bouton" onclick="UI.insert_focused('lcm(');">lcm</button><button class="bouton" onclick="UI.insert_focused('iegcd(');">iegcd</button>
+    <br>
+
+    <button class="bouton" onclick="UI.insert_focused('from linalg import *');"><strong>linalg</strong></button><button class="bouton" onclick="UI.insert_focused('add(');">add</button><button class="bouton" onclick="UI.insert_focused('sub(');">sub</button><button class="bouton" onclick="UI.insert_focused('mul(');">mul</button><button class="bouton" onclick="UI.insert_focused('inv(');">inv</button><button class="bouton" onclick="UI.insert_focused('transpose(');">tran</button><button class="bouton" onclick="UI.insert_focused('rref(');">rref</button>
+    <br>
+
+    <button class="bouton" onclick="UI.insert_focused('from numpy import *');"><strong>numpy</strong></button><button class="bouton" onclick="UI.insert_focused('array(');">array</button><button class="bouton" onclick="UI.insert_focused('linspace(');">linspace</button><button class="bouton" onclick="UI.insert_focused('arange(');">arange</button><button class="bouton" onclick="UI.insert_focused('solve(');">solve</button><button class="bouton" onclick="UI.insert_focused('eig(');">eig</button><button class="bouton" onclick="UI.insert_focused('inv(');">inv</button>
+    <br>
+  </div>
+  </div>
+  <div id="prog_graph_cmds" style="display:none">
+    <button class="bouton" title="Type ; on an empty commandline to display graph." onclick="UI.insert_focused('from graphic import *');"><strong>graphic</strong></button><button class="bouton" onclick="UI.insert_focused('set_pixel(');">pixel</button><button class="bouton" onclick="UI.insert_focused('draw_line(');">line</button><button class="bouton" onclick="UI.insert_focused('draw_rectangle(');">rect</button><button class="bouton" onclick="UI.insert_focused('draw_circle(');">circle</button><button class="bouton" onclick="UI.insert_focused('draw_string(');">string</button><button class="bouton" onclick="UI.insert_focused(';');">show</button>
+    <br>
+    <button class="bouton" onclick="UI.insert_focused('red');">red</button><button class="bouton" onclick="UI.insert_focused('green');">green</button><button class="bouton" onclick="UI.insert_focused('blue');">blue</button><button class="bouton" onclick="UI.insert_focused('yellow');">yellow</button><button class="bouton" onclick="UI.insert_focused('cyan');">cyan</button><button class="bouton" onclick="UI.insert_focused('magenta');">magenta</button>
+    <br>
+    
+    <button class="bouton" title="Inside MicroPython, type , on an empty commandline to display graph." onclick="UI.insert_focused('from matplotl import *');"><strong>matplotl</strong></button><button class="bouton" onclick="UI.insert_focused(UI.micropy?'bar(':'barplot(');">bar</button><button class="bouton" onclick="UI.insert_focused(UI.micropy?'scatter(':'scatterplot(');">scat.</button><button class="bouton" onclick="UI.insert_focused('arrow(');">arrow</button><button class="bouton" onclick="UI.insert_focused(UI.micropy?'plot(':'polygonplot(');">plot</button><button class="bouton" onclick="UI.insert_focused(UI.micropy?'text(':'legend(');">txt</button><button class="bouton" onclick="UI.insert_focused(',');">,</button><button class="bouton" onclick="UI.insert_focused('clf()');">clf</button>
+    
   </div>
   <div id="boutons_tortue" style="display:none">
     <input type="button" style="width:46px;height:35px" name="add_efface"
            id="add_efface"
            value="clear" onmousedown="event.preventDefault()"
-           onClick="if (UI.python_mode){ UI.eval_cmdline1('# script functions\n',true);UI.eval_cmdline1('clearscreen # Move script\n',true);} else {UI.eval_cmdline1('/* utility functions for the script */\n',true); UI.eval_cmdline1('/* Move script*/\nclearscreen;\n',true);}" title="create a turtle picture">
+           onClick="if (UI.python_mode){ UI.eval_cmdline1('# script functions\nfrom turtle import *\nreset()\n',true);UI.eval_cmdline1(UI.micropy?'.':'clearscreen # Move script\n',true);} else {UI.eval_cmdline1('/* utility functions for the script */\n',true); UI.eval_cmdline1('/* Move script*/\nclearscreen;\n',true);}" title="Create a turtle picture. Type . in an empty commandline to display turtle.">
     <input type="button" style="width:46px;height:35px" name="add_avance"
            id="add_avance"
            value="forward" onmousedown="event.preventDefault()"
-           onClick="UI.insertsemi(UI.focused,'forward ');" title="n steps forward (defaut 10)">
+           onClick="UI.insertsemi(UI.focused,'forward(');" title="n steps forward (defaut 10)">
     <input type="button" style="width:46px;height:35px" name="add_recule"
            id="add_recule"
            value="backward" onmousedown="event.preventDefault()"
-           onClick="UI.insertsemi(UI.focused,'backward ');" title="n steps backward (defaut 10)">
+           onClick="UI.insertsemi(UI.focused,'backward(');" title="n steps backward (defaut 10)">
     <input type="button" style="width:46px;height:35px" name="add_tourne_droite"
            id="add_tourne_droite"
            value="tright" onmousedown="event.preventDefault()"
-           onClick="UI.insertsemi(UI.focused,'right( ');" title="turn right n degrees (default 90)">
+           onClick="UI.insertsemi(UI.focused,'right(');" title="turn right n degrees (default 90)">
     <input type="button" style="width:46px;height:35px" name="add_tourne_gauche"
            id="add_tourne_gauche"
            value="tleft" onmousedown="event.preventDefault()"
-           onClick="UI.insertsemi(UI.focused,'left( ');" title="turn left n degrees (default 90)">
+           onClick="UI.insertsemi(UI.focused,'left(');" title="turn left n degrees (default 90)">
+    <input type="button" style="width:46px;height:35px" name="add_crayon"
+           id="add_crayon"
+           value="pen" onmousedown="event.preventDefault()"
+           onClick="UI.insertsemi(UI.focused,'pencolor(');" title="change color for the turtle pen">
+    <input type="button" style="width:46px;height:35px" name="add_rond"
+           id="add_rond"
+           value="arc" onmousedown="event.preventDefault()"
+           onClick="UI.insertsemi(UI.focused,UI.micropy?'circle(':'rond ');" title="Arc of circle">
+    <input type="button" style="width:46px;height:35px" name="add_ecris"
+           id="add_ecris"
+           value="write" onmousedown="event.preventDefault()"
+           onClick="UI.insertsemi(UI.focused,UI.micropy?'write(':'ecris ');" title="Write a string">
+    <span id="boutons_tortue_xcas">
     <input type="button" style="width:46px;height:35px" name="add_pas_de_cote"
            id="add_pas_de_cote"
            value="skip" onmousedown="event.preventDefault()"
@@ -1927,15 +1976,7 @@ If you want to see informations while a computation is running, run first
            id="add_saute"
            value="jump" onmousedown="event.preventDefault()"
            onClick="UI.insertsemi(UI.focused,'jump ');" title="turtle jumps n steps (default 10)">
-    <input type="button" style="width:46px;height:35px" name="add_crayon"
-           id="add_crayon"
-           value="pen" onmousedown="event.preventDefault()"
-           onClick="UI.insertsemi(UI.focused,'pencolor ');" title="change color for the turtle pen">
     <br>
-    <input type="button" style="width:46px;height:35px" name="add_rond"
-           id="add_rond"
-           value="arc" onmousedown="event.preventDefault()"
-           onClick="UI.insertsemi(UI.focused,'rond ');" title="Arc of circle">
     <input type="button" style="width:46px;height:35px" name="add_disque"
            id="add_disque"
            value="farc" onmousedown="event.preventDefault()"
@@ -1948,10 +1989,6 @@ If you want to see informations while a computation is running, run first
            id="add_triangle_plein"
            value="triangle" onmousedown="event.preventDefault()"
            onClick="UI.insertsemi(UI.focused,'triangle_plein ');" title="Filled triangle">
-    <input type="button" style="width:46px;height:35px" name="add_ecris"
-           id="add_ecris"
-           value="write" onmousedown="event.preventDefault()"
-           onClick="UI.insertsemi(UI.focused,'ecris ');" title="Write a string">
     <input type="button" style="width:46px;height:35px" name="add_repete"
            id="add_repete"
            value="repeat" onmousedown="event.preventDefault()"
@@ -1961,6 +1998,7 @@ If you want to see informations while a computation is running, run first
            id="tortue_maillage"
            value="mesh" onmousedown="event.preventDefault()"
            onClick="UI.turtle_maillage=(UI.turtle_maillage+1)%3" title="Change mesh type (quad, triang, none)">
+</span>
     <input type="button" style="width:46px;height:35px" name="tortue_clear"
            id="tortue_clear"
            value="&#x274C;" onmousedown="event.preventDefault()"
@@ -3468,6 +3506,7 @@ If you want to see informations while a computation is running, run first
 <link rel="stylesheet" href="dialog.css">
 <script src="xcasmode.js"></script>
 <script src="python.js"></script>
+<script src="micropy.js"></script>
 <script src="matchbrackets.js"></script>
 <script src="show-hint.js"></script>
 <style type="text/css">
@@ -3719,6 +3758,15 @@ If you want to see informations while a computation is running, run first
             }
             if (test >= -1) UI.langue = -test - 1;
         }
+        ck = UI.readCookie('xcas_calc');
+        if (ck) {
+            var test = eval(ck) - 1; //console.log(test);
+            if (test >= 0 && test < 3) {
+                form.calc[0].checked = false;
+                form.calc[test].checked = true;
+                UI.set_calc_type(test+1);
+            }
+        }
         ck = UI.readCookie('xcas_from');
         if (ck) {
             form.from.value = ck;
@@ -3736,14 +3784,20 @@ If you want to see informations while a computation is running, run first
         ck = UI.readCookie('xcas_warnpy');
         if (ck) UI.warnpy = form.warnpy_mode.checked = (ck == '1');
         ck = UI.readCookie('xcas_python_mode');
+        var hashParams = window.location.hash.substr(1);
+        var forcepy=hashParams.substr(0,6)=='python';
+        if (forcepy) ck='1';
         if (!ck) {
-            if (confirm('Activate Python syntax compatibility ?'))
-                ck = 1;
-            else ck = 0;
+           var tmp=prompt("Choisir l'interpreteur. 1: Xcas compatible Python, 0: Xcas en francais, 4: MicroPython");
+           if (tmp=='0' || tmp=='4') ck=tmp; else ck='1'; 
+           if (tmp=='xcas' || tmp=='Xcas') ck='0';
+           if (tmp=='python' || tmp=='Python') ck='4';
+           //if (confirm('Voulez-vous activer la compatibilite de syntaxe Python ?')) ck = 1; else ck = 0;
         }
-        form.python_mode.checked = (ck == '1' || ck=='2');
-        form.python_xor.checked = (ck=='2');
+        form.python_mode.checked = (ck == '1' || ck=='4');
+        form.python_xor.checked = (ck=='4');
         UI.python_mode = eval(ck);
+        if (UI.python_mode==4) UI.micropy=1;
         $id('add_//').value = UI.python_mode ? '#' : '//';
         if (!UI.kbdshift) $id('add_:').value = UI.python_mode ? ':' : ':=';
         UI.createCookie('xcas_python_mode', UI.python_mode, 10000);
@@ -3818,13 +3872,12 @@ If you want to see informations while a computation is running, run first
             }
             // else {alert('History not executed');}
         }
-        var hashParams = window.location.hash.substr(1);
         // substr(1) to remove the `#`
         if (UI.readCookie('xcas_session') != null) {
             $id('startup_restore').style.display = 'inline';
             $id('startup1').style.display = 'none';
         }
-        else $id('help').style.display = 'block';
+        else { if (!forcepy) $id('help').style.display = 'block'; }
         //UI.restoresession(hashParams,hist,asked,doexec);
         var cons = $id('restoresession');
         cons.style.display = 'inherit';

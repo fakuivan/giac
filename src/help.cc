@@ -24,12 +24,23 @@ using namespace std;
 #include "gen.h"
 #include "help.h"
 #include <iostream>
-#if !defined GIAC_HAS_STO_38 && !defined NSPIRE && !defined FXCG && !defined POCKETCAS
+#if !defined GIAC_HAS_STO_38 && !defined NSPIRE && !defined FXCG 
 #include <fstream>
 #endif
 #include "global.h"
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
+#endif
+
+#if defined MICROPY_LIB || defined HAVE_LIBMICROPYTHON
+extern "C" int mp_token(const char * line);
+#endif
+
+#ifdef KHICAS
+#include "kdisplay.h" // for select_item,
+#if defined MICROPY_LIB || defined HAVE_LIBMICROPYTHON
+extern "C" int xcas_python_eval;
+#endif
 #endif
 
 #if defined VISUALC || defined BESTA_OS
@@ -70,7 +81,7 @@ namespace giac {
   };
 
   const static_help_t static_help[]={
-#if !defined RTOS_THREADX && !defined BESTA_OS && !defined GIAC_HAS_STO_38 && !defined(KHICAS) && !defined POCKETCAS
+#if defined NSPIRE_NEWLIB || defined NUMWORKS || (!defined RTOS_THREADX && !defined BESTA_OS && !defined GIAC_HAS_STO_38 && !defined(KHICAS) && !defined POCKETCAS)
 #include "static_help.h"
 #else
     { "", { "", "", "", "",""}, "", "", "" },
@@ -97,21 +108,263 @@ namespace giac {
     return a.second>b.second;
   }
 
+  const char * python_keywords[] = {   // List of known giac keywords...
+    "False",
+    "None",
+    "True",
+    "and",
+    "break",
+    "continue",
+    "def",
+    "default",
+    "elif",
+    "else",
+    "except",
+    "for",
+    "from",
+    "global",
+    "if",
+    "import",
+    "not",
+    "or",
+    "return",
+    "try",
+    "while",
+    "xor",
+    "yield",
+  };
+  const char * const python_builtins[]={
+    "NoneType",
+    "__call__",
+    "__class__",
+    "__delitem__",
+    "__dir__", 
+    "__enter__",
+    "__exit__",
+    "__getattr__",
+    "__getitem__",
+    "__hash__",
+    "__init__",
+    "__int__",
+    "__iter__",
+    "__len__",
+    "__main__",
+    "__module__",
+    "__name__",
+    "__new__",
+    "__next__",
+    "__qualname__",
+    "__repr__",
+    "__setitem__",
+    "__str__",
+    "abs",
+    "all",
+    "any",
+    "append",
+    "args",
+    "bool",
+    "builtins",
+    "bytearray",
+    "bytecode",
+    "bytes",
+    "callable",
+    "chr",
+    "classmethod",
+    "clear",
+    "close",
+    "const",
+    "copy",
+    "count",
+    "dict",
+    "dir",
+    "divmod",
+    "end",
+    "endswith",
+    "eval",
+    "exec",
+    "extend",
+    "find",
+    "format",
+    "from_bytes",
+    "get",
+    "getattr",
+    "globals",
+    "hasattr",
+    "hash",
+    "id",
+    "index",
+    "insert",
+    "int",
+    "isalpha",
+    "isdigit",
+    "isinstance",
+    "islower",
+    "isspace",
+    "issubclass",
+    "isupper",
+    "items",
+    "iter",
+    "join",
+    "key",
+    "keys",
+    "len",
+    "list",
+    "little",
+    "locals",
+    "lower",
+    "lstrip",
+    "main",
+    "map",
+    "micropython",
+    "next",
+    "object",
+    "open",
+    "ord",
+    "pop",
+    "popitem",
+    "pow",
+    "print",
+    "range",
+    "read",
+    "readinto",
+    "readline",
+    "remove",
+    "replace",
+    "repr",
+    "reverse",
+    "rfind",
+    "rindex",
+    "round",
+    "rsplit",
+    "rstrip",
+    "self",
+    "send",
+    "sep",
+    "set",
+    "setattr",
+    "setdefault",
+    "sort",
+    "sorted",
+    "split",
+    "start",
+    "startswith",
+    "staticmethod",
+    "step",
+    "stop",
+    "str",
+    "strip",
+    "sum",
+    "super",
+    "throw",
+    "to_bytes",
+    "tuple",
+    "type",
+    "update",
+    "upper",
+    "utf-8",
+    "value",
+    "values",
+    "write",
+    "xcas",
+    "zip",
+  };
+
+  bool is_python_keyword(const char * s){
+    return dichotomic_search(python_keywords,sizeof(python_keywords)/sizeof(char*),s)!=-1;
+  }
+  
+  bool is_python_builtin(const char * s){
+    return dichotomic_search(python_builtins,sizeof(python_builtins)/sizeof(char*),s)!=-1;
+  }
+  
   // NB: cmd_name may be localized but related is not localized
-  bool has_static_help(const char * cmd_name,int lang,const char * & howto,const char * & syntax,const char * & related,const char * & examples){
+  bool has_static_help(const char * & cmd_name,int lang,const char * & howto,const char * & syntax,const char * & related,const char * & examples){
 #ifdef GIAC_HAS_STO_38
     const char nullstring[]=" ";
 #else
     const char nullstring[]="";
 #endif
+    bool tooltip=lang & 0x100;
+    if (tooltip)
+      lang=lang & 0xff;
     if (lang<=0)
       lang=2;
     if (lang>HELP_LANGUAGES)
       lang=2;
     string s=unlocalize(cmd_name);
     int l=int(s.size());
+    if (l==0) return false;
     if ( (l>2) && (s[0]=='\'') && (s[l-1]=='\'') )
       s=s.substr(1,l-2);
+#ifdef KHICAS
+    static string res;
+    int pos=0,kk,ks=s.size();
+    for (;pos<static_help_size;++pos){
+      if (strcmp(static_help[pos].cmd_name,s.c_str())>=0)
+	break;
+    }
+    const char * items[1+static_help_size];
+    kk=0;
+#ifdef MICROPY_LIB
+    if (xcas_python_eval && !python_heap){
+      python_init(python_stack_size,python_heap_size);
+    }
+#endif
+    for (;pos<static_help_size;++kk,++pos){
+      const static_help_t & sh=static_help[pos];
+      const char * ptr=sh.cmd_name;
+#ifdef MICROPY_LIB
+      if (xcas_python_eval){
+	if (!is_python_builtin(ptr) && mp_token(ptr)==0){
+	  --kk;
+	  continue;
+	}
+      }
+#endif
+      if (strcmp(ptr,s.c_str())==0){
+	howto=sh.cmd_howto[lang-1];
+	if (!howto)
+	  howto=sh.cmd_howto[1];
+	  syntax=sh.cmd_syntax;
+	  if (!syntax)
+	    syntax=nullstring;
+	  related=sh.cmd_related;
+	  if (!related)
+	    related=nullstring;
+	  examples=sh.cmd_examples;
+	  if (!examples)
+	    examples=nullstring;
+	  return true;
+      }
+      if (strlen(ptr)<ks || strncmp(ptr,s.c_str(),ks)!=0)
+	break;
+      items[kk]=ptr;
+    }
+    if (tooltip){
+      if (kk==1){
+	cmd_name=items[0];
+	return has_static_help(items[0],lang,howto,syntax,related,examples);
+      }
+      if (kk>1){
+	res="";
+	for (int i=0;i<kk;++i){
+	  res += items[i];
+	  res +=';';
+	}
+	examples=res.c_str();
+	return true;
+      }
+      return false;
+    }
+    else {
+      items[kk]=0;
+      int r=select_item(items,"Select completion",false);
+      if (r<0)
+	return false;
+      cmd_name=items[r];
+      return has_static_help(items[r],lang,howto,syntax,related,examples);
+    }
+#endif
     static_help_t h={s.c_str(),{0,0,0,0,0},0,0,0};
     std::pair<const static_help_t *,const static_help_t *> p=equal_range(static_help,static_help+static_help_size,h,static_help_sort());
     if (p.first!=p.second && p.first!=static_help+static_help_size){
@@ -129,7 +382,7 @@ namespace giac {
 	examples=nullstring;
       return true;
     }
-#ifdef EMCC
+#if defined EMCC
     // Find closest string
     syntax=nullstring;
     related=nullstring;
@@ -190,7 +443,11 @@ namespace giac {
   }
 
   // Run ./icas with export GIAC_DEBUG=-2 to print static_help.h and static_help_w.h, then sort in emacs
-  // cascmd_fr -> longhelp.js: 
+  // /usr/share/giac/doc/fr or en -> longhelp.js or longhelp_en.js: html_mtt 
+  // replace string \244 with :
+  // macro replace /usr/share/giac/doc/en/cascmd_en/ with ' and #... with '
+  // longhelp*.js should begin with var longhelp = {
+  // and end with };
   static bool output_static_help(vector<aide> & v,const vector<int> & langv){
 #if !defined NSPIRE && !defined FXCG && !defined GIAC_HAS_STO_38
     add_language(5,context0); // add german help de/aide_cas

@@ -79,6 +79,19 @@ using namespace std;
 namespace giac {
 #endif // ndef NO_NAMESPACE_GIAC
 
+  longlong memory_usage(){
+#if defined HAVE_SYS_RESOURCE_H && !defined NSPIRE && !defined NSPIRE_NEWLIB
+    struct rusage r_usage;
+    getrusage(RUSAGE_SELF,&r_usage);
+#ifdef __APPLE__
+    return r_usage.ru_maxrss;
+#else
+    return r_usage.ru_maxrss*1000;
+#endif
+#endif
+    return -1;
+  }
+
   //  vecteur trim(const vecteur & p,environment * env);
 
 #ifdef HAVE_LIBCOCOA
@@ -443,7 +456,7 @@ namespace giac {
 #define BIGENDIAN
 #endif
 
-#if !defined CAS38_DISABLED && !defined FXCG
+#if !defined CAS38_DISABLED && !defined FXCG && !defined KHICAS
   //#define GBASIS_SELECT_TOTAL_DEGREE
 #if GROEBNER_VARS!=15 && !defined BIGENDIAN // double revlex ordering is not compatible with indices swapping
 #define GBASIS_SWAP 
@@ -2637,7 +2650,7 @@ namespace giac {
 	c=0;
 	C=0;
       }
-      // extract from heap all terms having m as monomials, substract from c
+      // extract from heap all terms having m as monomials, subtract from c
       while (!H.empty() && H.front().u==m){
 	std::pop_heap(H.begin(),H.end(),key);
 	heap_t<tdeg_t> & current=H.back(); // was root node of the heap
@@ -3856,7 +3869,7 @@ namespace giac {
       }
       if (R)
 	R->coord.push_back(T_unsigned<modint,tdeg_t>(1,m));
-      // extract from heap all terms having m as monomials, substract from c
+      // extract from heap all terms having m as monomials, subtract from c
       while (!H.empty() && H.front().u==m){
 	std::pop_heap(H.begin(),H.end(),key);
 	heap_t<tdeg_t> & current=H.back(); // was root node of the heap
@@ -4000,7 +4013,7 @@ namespace giac {
       }
       if (R)
 	R->coord.push_back(T_unsigned<modint,tdeg_t>(1,m));
-      // extract from heap all terms having m as monomials, substract from c
+      // extract from heap all terms having m as monomials, subtract from c
       while (!H.empty() && H_[H.front()].u==m){
 	std::pop_heap(H.begin(),H.end(),keyheap);
 	heap_t<tdeg_t> & current=H_[H.back()]; // was root node of the heap
@@ -5342,6 +5355,10 @@ namespace giac {
   }
 
 #ifdef PSEUDO_MOD
+  // find pseudo remainder of x mod p, 2^nbits>=p>2^(nbits-1)
+  // assumes invp=2^(2*nbits)/p+1 has been precomputed 
+  // and abs(x)<2^(31+nbits)
+  // |remainder| <= max(2^nbits,|x|*p/2^(2nbits)), <=2*p if |x|<=p^2
   inline int pseudo_mod(longlong x,int p,unsigned invp,unsigned nbits){
     return int(x - (((x>>nbits)*invp)>>(nbits))*p);
   }
@@ -8744,9 +8761,9 @@ namespace giac {
 	  clean[B[i].first]=false;
 	  clean[B[i].second]=false;
 	}
-	for (unsigned i=0;i<clean.size();++i){
-	  if (clean[i] && res[i].coord.capacity()>1){
-		  cleared += unsigned(res[i].coord.capacity()) - 1;
+	for (unsigned i=0;i<clean.size() && i<res.size();++i){
+	  if (clean[i] && res[i].coord.capacity()>1 && !res[i].coord.empty()){
+	    cleared += unsigned(res[i].coord.capacity()) - 1;
 	    polymod<tdeg_t> clearer;
 	    clearer.coord.push_back(res[i].coord.front());
 	    clearer.coord.swap(res[i].coord);
@@ -9189,6 +9206,7 @@ namespace giac {
 	    it->g=tmpz;
 	  }
 	}
+	mpz_clear(tmpz);
 	return true;
       }
     }
@@ -9773,20 +9791,6 @@ namespace giac {
 	B=b;
     }
     return B;
-  }
-
-  bool chk_equal_mod(const gen & a,longlong p,int m){
-    if (a.type==_FRAC){
-      int n=a._FRACptr->num.type==_ZINT?modulo(*a._FRACptr->num._ZINTptr,m):a._FRACptr->num.val;
-      int d=a._FRACptr->den.type==_ZINT?modulo(*a._FRACptr->den._ZINTptr,m):a._FRACptr->den.val;
-      return (n-longlong(p)*d)%m==0;
-    }
-    if (a.type==_ZINT)
-      return (modulo(*a._ZINTptr,m)-p)%m==0;
-    if (a.type==_INT_)
-      return (a.val-p)%m==0;
-    CERR << "Unknow type in reconstruction " << a << '\n';
-    return false;
   }
 
   bool chk_equal_mod(const gen & a,const vector<int> & p,int m){
@@ -10658,7 +10662,7 @@ namespace giac {
       }
       //CERR << m << '\n';
       R.push_back(m);
-      // extract from heap all terms having m as monomials, substract from c
+      // extract from heap all terms having m as monomials, subtract from c
       while (!H.empty() && H_[H.front()].u==m){
 	heap_t<tdeg_t> & current=H_[H.front()]; // was root node of the heap
 	const zpolymod<tdeg_t> & gcurrent = g[G[current.i]];
@@ -11535,19 +11539,6 @@ template<class modint_t,class modint_u>
 		 const order_t & o_):Bptr(Bptr_),resptr(resptr_),rightshiftptr(rightshiftptr_),leftshiftptr(leftshiftptr_),o(o_){}
   };
 
-  longlong memory_usage(){
-#if defined HAVE_SYS_RESOURCE_H && !defined NSPIRE && !defined NSPIRE_NEWLIB
-    struct rusage r_usage;
-    getrusage(RUSAGE_SELF,&r_usage);
-#ifdef __APPLE__
-    return r_usage.ru_maxrss;
-#else
-    return r_usage.ru_maxrss*1000;
-#endif
-#endif
-    return -1;
-  }
-
    // #define GIAC_CACHE2ND 1; // cache 2nd pair reduction, slower
 
   template<class tdeg_t>
@@ -12028,7 +12019,7 @@ template<class modint_t,class modint_u>
 	CERR << "Error building M" << '\n';
     }
 #else
-    zbuildM_t<tdeg_t> tmp={&res,&G,env,multimodular,&quo,&R,&Rdegpos,Rhashptr,&coeffindex,N,&Mindex,&Mcoeff,&atrier,0,G.size(),0};
+    zbuildM_t<tdeg_t> tmp={&res,&G,env,multimodular,&quo,&R,&Rdegpos,Rhashptr,&coeffindex,N,&Mindex,&Mcoeff,&atrier,0,int(G.size()),0};
     zbuildM_<tdeg_t>((void *)&tmp);
 #endif
   } // end parallelization
@@ -12048,7 +12039,7 @@ template<class modint_t,class modint_u>
     // If several pairs share the same right term, 
     // reduce the right term without leading monomial once
     // reduce corresponding left terms without leading monomial 
-    // substract
+    // subtract
     f4buchbergerv.resize(Bs);
     zinfo_t<tdeg_t> info_tmp;
     unsigned nonzero = unsigned(Bs);
@@ -13681,7 +13672,12 @@ Let {f1, ..., fr} be a set of polynomials. The Gebauer-Moller Criteria are as fo
     }
     // now try a random small integer linear combination
     if (radical!=-1){
-      for (unsigned essai=0;essai<40;++essai){
+      // 6 july 2020: # of tries 40->100 for 
+      // eqs:=[c^2 - 3, -a^14 + 85/6*a^12 - 13465/144*a^10 + 54523/144*a^8 - 20819/18*a^6 + 8831/3*a^4 - 7384*a^2 + 10800, -b^14 + 59/4*b^12 - 459/4*b^10 + 8159/16*b^8 - 11777/8*b^6 + 40395/16*b^4 - 10971/4*b^2 + 3267, -1/599040*(53136*b^14 - 692236*b^12 + 4886796*b^10 - 20593959*b^8 + 57747314*b^6 - 116274195*b^4 + 186055404*b^2 - 162887472)*(1008*a^13 - 12240*a^11 + 67325*a^9 - 218092*a^7 + 499656*a^5 - 847776*a^3 + 1063296*a) - 1/112320*(111024*a^14 - 1310760*a^12 + 7843395*a^10 - 35101603*a^8 + 158038072*a^6 - 630801328*a^4 + 1561088256*a^2 - 1489593600)*(56*b^13 - 708*b^11 + 4590*b^9 - 16318*b^7 + 35331*b^5 - 40395*b^3 + 21942*b)];
+      // pour j de 1 jusque 100 faire gb:=gbasis(eqs,[c,a,b],rur);fpour;
+      // 40 was insufficient for the 11th gbasis rur computation
+      unsigned essai=0;
+      for (;essai<rur_separate_max_tries;++essai){
 	s.coord.clear(); m.clear(); M.clear();
 	int n=(3+essai/5);
 	int r=int(std_rand()*std::pow(double(n),double(d))/RAND_MAX),r1;
@@ -13700,6 +13696,10 @@ Let {f1, ..., fr} be a set of polynomials. The Gebauer-Moller Criteria are as fo
       }
       if (radical==1)
 	return false;
+      if (essai==rur_separate_max_tries){
+	gensizeerr("Unable to find a separation form for the RUR computation. Try rur_separate_max_tries(n) with n larger than "+print_INT_(rur_separate_max_tries));
+	return false;
+      }
     }
     // shrink ideal and try again
     bool shrinkit=false;
@@ -14291,7 +14291,8 @@ Let {f1, ..., fr} be a set of polynomials. The Gebauer-Moller Criteria are as fo
 	  }
 	  else {
 	    if (!rur_compute(gbmod,lmtmp,lmmodradical,p.val,s,rurv)){
-		  ok = false; rur = 0;
+	      CERR << CLOCK()*1e-6 << "Unable to compute modular rur\n";
+	      ok = false; rur = 0;
 	      continue;
 	    }
 	    if (debug_infolevel)
@@ -14608,7 +14609,7 @@ Let {f1, ..., fr} be a set of polynomials. The Gebauer-Moller Criteria are as fo
 	    int epsp=P[i].type==_ZINT?mpz_sizeinbase(*P[i]._ZINTptr,10):8-int(std::ceil(2*std::log10(terms)));
 	    if (epsp>termsmin)
 	      epsp=termsmin;
-	    *logptr(contextptr) << gettext("Running a probabilistic check for the reconstructed Groebner basis. If successfull, error probability is less than ") << eps << gettext(" and is estimated to be less than 10^-") << epsp << gettext(". Use proba_epsilon:=0 to certify (this takes more time).") << '\n';
+	    *logptr(contextptr) << gettext("Running a probabilistic check for the reconstructed Groebner basis. If successful, error probability is less than ") << eps << gettext(" and is estimated to be less than 10^-") << epsp << gettext(". Use proba_epsilon:=0 to certify (this takes more time).") << '\n';
 	  }
 	  G.clear();
 	  if (eps<1.01e-10){
@@ -14776,7 +14777,7 @@ Let {f1, ..., fr} be a set of polynomials. The Gebauer-Moller Criteria are as fo
 	    int epsp=mpz_sizeinbase(*P[i]._ZINTptr,10)-int(std::ceil(2*std::log10(terms)));
 	    if (epsp>termsmin)
 	      epsp=termsmin;
-	    *logptr(contextptr) << gettext("Running a probabilistic check for the reconstructed Groebner basis. If successfull, error probability is less than ") << eps << gettext(" and is estimated to be less than 10^-") << epsp << gettext(". Use proba_epsilon:=0 to certify (this takes more time).") << '\n';
+	    *logptr(contextptr) << gettext("Running a probabilistic check for the reconstructed Groebner basis. If successful, error probability is less than ") << eps << gettext(" and is estimated to be less than 10^-") << epsp << gettext(". Use proba_epsilon:=0 to certify (this takes more time).") << '\n';
 	  }
 	  G.clear();
 	  if (eps<6e-8 && !is_gbasis(W[i],eps*1.677e7,modularcheck)){

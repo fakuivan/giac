@@ -36,6 +36,7 @@ namespace giac {
   gen _reset_solve_counter(const gen & args,const context * contextptr);
   void set_merge(vecteur & v,const vecteur & w);
   bool is_inequation(const gen & g);
+  gen rationalize(const gen & g,const gen & x,GIAC_CONTEXT);
 
   gen equal2diff(const gen & g); // rewrite = as -
   vecteur protect_sort(const vecteur & res,GIAC_CONTEXT);
@@ -105,6 +106,7 @@ namespace giac {
     int reinject_end;
     int reinject_for_calc;
   };
+  extern int rur_separate_max_tries;
   vectpoly gbasis(const vectpoly & v,const gen & order,bool with_cocoa,bool with_f5,int & rur,environment * env,GIAC_CONTEXT,gbasis_param_t gbasis_param); // with_f5 is in fact modular_check
   gen remove_equal(const gen & f);
   vecteur remove_equal(const_iterateur it,const_iterateur itend);

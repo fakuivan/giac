@@ -73,7 +73,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/codeset.m4 \
 	$(top_srcdir)/m4/uintmax_t.m4 $(top_srcdir)/m4/ulonglong.m4 \
 	$(top_srcdir)/m4/wchar_t.m4 $(top_srcdir)/m4/wint_t.m4 \
 	$(top_srcdir)/m4/xsize.m4 $(top_srcdir)/acinclude.m4 \
-	$(top_srcdir)/configure.in
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 mkinstalldirs = $(SHELL) $(top_srcdir)/config/mkinstalldirs
@@ -137,6 +137,7 @@ AUTOCONF = @AUTOCONF@
 AUTOHEADER = @AUTOHEADER@
 AUTOMAKE = @AUTOMAKE@
 AWK = @AWK@
+BERNMM_LIBS = @BERNMM_LIBS@
 BUILD_INCLUDED_LIBINTL = @BUILD_INCLUDED_LIBINTL@
 CATOBJEXT = @CATOBJEXT@
 CC = @CC@
@@ -144,6 +145,7 @@ CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
 COCOA_LIBS = @COCOA_LIBS@
 CONFIG_AO = @CONFIG_AO@
+CONFIG_BERNMM = @CONFIG_BERNMM@
 CONFIG_COCOA = @CONFIG_COCOA@
 CONFIG_CURL = @CONFIG_CURL@
 CONFIG_DOC_PROGS = @CONFIG_DOC_PROGS@

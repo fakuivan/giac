@@ -30,7 +30,7 @@
 #endif
 //#include <stdint.h>
 
-#ifdef __x86_64__
+#if defined(__x86_64__) || defined(__arm64__)
 #define x86_64 1
 #endif
 
@@ -58,6 +58,8 @@
 #ifdef RTOS_THREADX
 #define NO_STDEXCEPT 1
 #endif
+
+#define MAX_INTSTACK 32768 // maximal size for allocating an array by int tab[]
 
 #ifdef FXCG
 #define RAND_MAX 2147483647
@@ -132,6 +134,8 @@ typedef long double giac_double;
 typedef double giac_double;
 #endif
 
+typedef long double  long_double;
+
 // sprintf replacement
 int my_sprintf(char * s, const char * format, ...);
 #ifdef GIAC_HAS_STO_38
@@ -155,7 +159,7 @@ int my_sprintf(char * s, const char * format, ...);
 #define alias_type size_t
 #endif
 
-#if defined(RTOS_THREADX) || defined(BESTA_OS) || defined NSPIRE
+#if defined(RTOS_THREADX) || defined(BESTA_OS) || defined NSPIRE || defined KHICAS
 #define NO_TEMPLATE_MULTGCD
 #endif
 
@@ -281,8 +285,8 @@ typedef unsigned __int64 ulonglong ;
 typedef long long longlong;
 typedef unsigned long long ulonglong;
 #ifdef x86_64
-  typedef int int128_t __attribute__((mode(TI)));
-  typedef unsigned int uint128_t __attribute__((mode(TI)));
+typedef int int128_t __attribute__((mode(TI)));
+typedef unsigned int uint128_t __attribute__((mode(TI)));
 #ifndef INT128
 #define INT128 1
 #endif
@@ -301,6 +305,7 @@ typedef unsigned long long ulonglong;
 #endif
 
 #endif // __VISUALC__
+
 
 #ifdef VISUALC
 inline void swap_giac_double(double & a,double & b){ double c=a; a=b; b=c; }

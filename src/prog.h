@@ -26,6 +26,8 @@
 #ifndef NO_NAMESPACE_GIAC
 namespace giac {
 #endif // ndef NO_NAMESPACE_GIAC
+  typedef const char * cstcharptr;
+  extern int (*micropy_ptr) (cstcharptr);
   extern bool user_screen; 
   extern int user_screen_io_x,user_screen_io_y,user_screen_fontsize;
   extern const int rand_max2; // replace RAND_MAX if giac_rand(contextptr) is used
@@ -391,9 +393,13 @@ namespace giac {
   gen quote_read(const gen & args,GIAC_CONTEXT); // read in a file and return non evaled
   gen _read(const gen & args,GIAC_CONTEXT); // read in a file and return evaled
   extern const unary_function_ptr * const  at_read;
+  extern const unary_function_ptr * const  at_read16;
+  extern const unary_function_ptr * const  at_read32;
 
   gen _write(const gen & args,GIAC_CONTEXT);
   extern const unary_function_ptr * const  at_write;
+  extern const unary_function_ptr * const  at_write16;
+  extern const unary_function_ptr * const  at_write32;
 
   gen _save_history(const gen & args,GIAC_CONTEXT);
   extern const unary_function_ptr * const  at_save_history;
@@ -568,7 +574,7 @@ namespace giac {
   extern const unary_function_ptr * const  at_widget_size;
 
   gen current_sheet(const gen & g,GIAC_CONTEXT);
-#if !defined RTOS_THREADX && !defined NSPIRE && !defined FXCG
+#if !defined RTOS_THREADX && !defined NSPIRE && !defined FXCG && !defined KHICAS
   extern unary_function_eval __current_sheet;
 #endif
   extern const unary_function_ptr * const  at_current_sheet;
@@ -851,13 +857,13 @@ namespace giac {
   extern gen _chain_unit;
   extern gen _Curie_unit;
   extern gen _ct_unit;
-  // extern gen _°_unit;
+  // extern gen _Â°_unit;
   extern gen _d_unit;
   extern gen _dB_unit;
   extern gen _dyn_unit;
   extern gen _erg_unit;
   extern gen _eV_unit;
-  // extern gen _°F_unit;
+  // extern gen _Â°F_unit;
   extern gen _fath_unit;
   extern gen _fbm_unit;
   // extern gen _fc_unit;

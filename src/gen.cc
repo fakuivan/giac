@@ -2,11 +2,15 @@
 #include "giacPCH.h"
 #ifdef KHICAS
 #include "kdisplay.h"
-#ifdef DEVICE
+#if defined DEVICE && !defined NSPIRE_NEWLIB
 size_t stackptr=0x20036000;
 #else
 size_t stackptr=0xffffffffffffffff;
 #endif
+#endif
+
+#ifdef NSPIRE_NEWLIB
+#include <os.h>
 #endif
 
 /*
@@ -2184,7 +2188,7 @@ namespace giac {
 	    return true;
 	  }
 #else // rtos
-#if !defined(WIN32) && defined(HAVE_PTHREAD_H)
+#if !defined(WIN32) && defined(HAVE_PTHREAD_H) && defined HAVE_LIBPTHREAD
 	  void * stackaddr;
 	  if (contextptr && (stackaddr=thread_param_ptr(contextptr)->stackaddr)){
 	    // CERR << &slevel << " " << thread_param_ptr(contextptr)->stackaddr << '\n';
@@ -2206,7 +2210,14 @@ namespace giac {
 		  gensizeerr(gettext("Too many recursions)"),evaled);
 		  return true;
 		}
+#ifdef KHICAS
+		if (warn_nr){
+		  *logptr(contextptr) << gettext("Running non recursive evaluator") << '\n';
+		  warn_nr=false;
+		}
+#else
 		*logptr(contextptr) << gettext("Running non recursive evaluator") << '\n';
+#endif
 		evaled=nr_eval(*this,level,contextptr);
 		return true;
 	      }
@@ -4907,12 +4918,12 @@ namespace giac {
 	  return symbolic(at_program,gen(makevecteur(var1,0,operator_plus(res1,res2,contextptr)),_SEQ__VECT));
       }
       if (!is_constant_wrt(b,var1,contextptr))
-	*logptr(contextptr) << "Warning function+constant with constant dependant of mute variable" << '\n';
+	*logptr(contextptr) << "Warning function+constant with constant dependent of mute variable" << '\n';
       return symbolic(at_program,gen(makevecteur(var1,0,operator_plus(res1,b,contextptr)),_SEQ__VECT));
     }
     if (is_algebraic_program(b,var2,res2)){
       if (!is_constant_wrt(a,var2,contextptr))
-	*logptr(contextptr) << "Warning constant+function with constant dependant of mute variable" << '\n';
+	*logptr(contextptr) << "Warning constant+function with constant dependent of mute variable" << '\n';
       return symbolic(at_program,gen(makevecteur(var2,0,operator_plus(a,res2,contextptr)),_SEQ__VECT));
     }
     if (a.type==_VECT){
@@ -6114,7 +6125,7 @@ namespace giac {
       return string2gen(res,false);
     }
 #endif
-    case _VECT__INT_: 
+    case _VECT__INT_:
       if (b.val>=0 && python_compat(contextptr)==2){
 	vecteur res;
 	res.reserve(a._VECTptr->size()*b.val);
@@ -6878,7 +6889,9 @@ namespace giac {
 	  else
 	    subexponent_num = subexponent_num * (*it);
 	}
-	if (superexponent.type!=_INT_)
+	if (superexponent.type!=_INT_ 
+	    || (!lidnt(exponent).empty() && absint(superexponent.val)>MAX_COMMON_ALG_EXT_ORDER_SIZE)
+	    )
 	  return new_ref_symbolic(symbolic(at_pow,gen(makenewvecteur(base,exponent),_SEQ__VECT)));
 	if (subexponent_deno.type!=_INT_){
 	  if (is_one(superexponent))
@@ -6990,12 +7003,12 @@ namespace giac {
 	  return symbolic(at_program,gen(makevecteur(var1,0,operator_times(res1,res2,contextptr)),_SEQ__VECT));
       }
       if (!is_constant_wrt(b,var1,contextptr))
-	*logptr(contextptr) << "Warning function*constant with constant dependant of mute variable" << '\n';
+	*logptr(contextptr) << "Warning function*constant with constant dependent of mute variable" << '\n';
       return symbolic(at_program,gen(makevecteur(var1,0,operator_times(res1,b,contextptr)),_SEQ__VECT));
     }
     if (is_algebraic_program(b,var2,res2)){
       if (!is_constant_wrt(a,var2,contextptr))
-	*logptr(contextptr) << "Warning constant*function with constant dependant of mute variable" << '\n';
+	*logptr(contextptr) << "Warning constant*function with constant dependent of mute variable" << '\n';
       return symbolic(at_program,gen(makevecteur(var2,0,operator_times(a,res2,contextptr)),_SEQ__VECT));
     }
     if (is_inf(a)){
@@ -7553,7 +7566,10 @@ namespace giac {
   gen pow(unsigned long int base, unsigned long int exponent){
     ref_mpz_t *e=new ref_mpz_t;
 #ifdef EMCC
-    if (base==int(base)){
+    mpz_set_si(e->z,base);
+    mpz_pow_ui(e->z,e->z,exponent);
+    return e;
+    if (base==int(base)){ // too slow!
       mpz_set_si(e->z,1);
       for (unsigned long int i=0;i<exponent;++i){
 	mpz_mul_ui(e->z,e->z,int(base));
@@ -7879,12 +7895,12 @@ namespace giac {
 	      return symbolic(at_program,gen(makevecteur(var1,0,rdiv(res1,res2,contextptr)),_SEQ__VECT));
 	  }
 	  if (!is_constant_wrt(b,var1,contextptr))
-	    *logptr(contextptr) << "Warning function/constant with constant dependant of mute variable" << '\n';
+	    *logptr(contextptr) << "Warning function/constant with constant dependent of mute variable" << '\n';
 	  return symbolic(at_program,gen(makevecteur(var1,0,rdiv(res1,b,contextptr)),_SEQ__VECT));
 	}
 	if (is_algebraic_program(b,var2,res2)){
 	  if (!is_constant_wrt(a,var2,contextptr))
-	    *logptr(contextptr) << "Warning constant/function with constant dependant of mute variable" << '\n';
+	    *logptr(contextptr) << "Warning constant/function with constant dependent of mute variable" << '\n';
 	  return symbolic(at_program,gen(makevecteur(var2,0,rdiv(a,res2,contextptr)),_SEQ__VECT));	
 	}
       }
@@ -10245,6 +10261,43 @@ namespace giac {
   }
 #endif
 
+  longlong invmodll(longlong a,longlong b){
+    if (a==1 || a==-1 || a==1-b)
+      return a;
+    longlong aa(1),ab(0),ar(0);
+#ifdef VISUALC
+    longlong q,r;
+    while (b){
+      q=a/b;
+      r=a-q*b;
+      ar=aa-q*ab;
+      a=b;
+      b=r;
+      aa=ab;
+      ab=ar;
+    }
+#else
+    lldiv_t qr;
+    while (b){
+      qr=lldiv(a,b);
+      ar=aa-qr.quot*ab;
+      a=b;
+      b=qr.rem;
+      aa=ab;
+      ab=ar;
+    }
+#endif
+    if (a==1)
+      return aa;
+    if (a!=-1){
+#ifndef NO_STDEXCEPT
+      setsizeerr(gettext("Not invertible"));
+#endif
+      return 0;
+    }
+    return -aa;
+  }
+
   /*
   int powmod(int a,unsigned long n,int m){
     if (!n)
@@ -10265,6 +10318,8 @@ namespace giac {
       return 1;
     if (n==1)
       return a;
+    if (n==2)
+      return (a*longlong(a))%m;
     int b=a%m,c=1;
     if (m<46340){
       while (n>0){
@@ -10315,6 +10370,17 @@ namespace giac {
       CERR << "smod longlong " << r << " " << m << '\n';
     return res1;
     //return smod(R,m);
+  }
+
+  longlong smodll(longlong a,longlong b){
+    longlong r=a%b;
+    if (r>b/2)
+      r -= b;
+    else {
+      if (r<=-b/2)
+	r += b;
+    }
+    return r;
   }
 
   int gcd(int a,int b){
@@ -10684,7 +10750,7 @@ namespace giac {
     case _POLY__POLY:
       return polygcd(*a._POLYptr,*b._POLYptr);
     case _VECT__VECT:
-      return gen(gcd(*a._VECTptr,*b._VECTptr,0),_POLY1__VECT);
+      return gen(gcd(*a._VECTptr,*b._VECTptr,0,ntl_on(contextptr) && a._VECTptr->size()>=NTL_MODGCD && b._VECTptr->size()>=NTL_MODGCD),_POLY1__VECT);
     case _FRAC__FRAC:
       return fraction(gcd(a._FRACptr->num,b._FRACptr->num,contextptr),lcm(a._FRACptr->den,b._FRACptr->den));
     default:
@@ -10723,6 +10789,23 @@ namespace giac {
     u=au;
     d=a;
     v=iquo(d-a_orig*u,b_orig);
+  }
+
+  int iegcd(int a_,int b_,int &u,int & v){
+    int a(a_),b(b_),au(1),bu(0),r,ru;
+    longlong q;
+    while (b){
+      q=a/b;
+      r=a-b*q;
+      a=b;
+      b=r;
+      ru=au-bu*q;
+      au=bu;
+      bu=ru;
+    }
+    u=au;
+    v=(a-longlong(a_)*u)/b_;
+    return a;
   }
 
   void egcd(const gen &ac,const gen &bc, gen & u,gen &v,gen &d ){
@@ -10807,6 +10890,19 @@ namespace giac {
       return gentypeerr(gettext("%"));
     }
     return 0;
+  }
+
+  bool is_multiple(const gen & a,const gen &b){
+    if (a.type==_INT_){
+      if (b.type!=_INT_)
+	return false;
+      return a.val%b.val==0;
+    }
+    if (a.type!=_ZINT)
+      return false;
+    if (b.type==_INT_)
+      return modulo(*a._ZINTptr,b.val)==0;
+    return a%b==0;
   }
 
   static void _ZINTrem(const gen & a,const gen &b,gen & q,ref_mpz_t * & rem){
@@ -11129,7 +11225,7 @@ namespace giac {
     return true;
   }
 
-  static bool alloc_fracmod(const gen & a_orig,const gen & modulo,gen & res,mpz_t & d,mpz_t & d1,mpz_t & absd1,mpz_t &u,mpz_t & u1,mpz_t & ur,mpz_t & q,mpz_t & r,mpz_t &sqrtm,mpz_t & tmp){  
+  bool alloc_fracmod(const gen & a_orig,const gen & modulo,gen & res,mpz_t & d,mpz_t & d1,mpz_t & absd1,mpz_t &u,mpz_t & u1,mpz_t & ur,mpz_t & q,mpz_t & r,mpz_t &sqrtm,mpz_t & tmp){  
     // write a as p/q with |p| and |q|<sqrt(modulo/2)
     if (a_orig.type==_VECT){
       const_iterateur it=a_orig._VECTptr->begin(),itend=a_orig._VECTptr->end();
@@ -11290,7 +11386,7 @@ namespace giac {
   gen ichinrem(const gen & a,const gen &b,const gen & amod, const gen & bmod){
     if (a.type==_INT_ && b.type==_INT_ && amod.type==_INT_ && bmod.type==_INT_ && gcd(amod.val,bmod.val)==1){
       int amodinv=invmod(amod.val,bmod.val);
-      longlong res=a.val+((longlong(amodinv)*(b.val-a.val))%bmod.val)*amod.val;
+      longlong res=a.val+((longlong(amodinv)*(b.val-longlong(a.val)))%bmod.val)*amod.val;
       return res;
     }
     gen A,B,d,q;
@@ -11350,17 +11446,17 @@ namespace giac {
 #ifndef NO_STDEXCEPT
       settypeerr(gettext("is_probab_prime_p"));
 #endif
-      return false;
+      return 0;
     }
     if (a.type==_INT_ && a.val<2)
-      return false;
+      return 0;
     if (a.type==_INT_ && a.val<(1<<20)){
       for (int i=0;;++i){
 	int p=giac_primes[i];
 	if (p*p>a.val)
-	  return true;
+	  return 2;
 	if (a.val%p==0)
-	  return false;
+	  return 0;
       }
     }
     ref_mpz_t *aptr;
@@ -11803,7 +11899,7 @@ namespace giac {
 	return 1;
       }
     }
-#if !defined(WIN32) && defined(HAVE_PTHREAD_H)
+#if !defined(WIN32) && defined(HAVE_PTHREAD_H) && defined HAVE_LIBPTHREAD
     if (contextptr && thread_param_ptr(contextptr)->stackaddr && thread_param_ptr(contextptr)->stacksize/2){
       gen er;
       short int err=s.size();
@@ -12261,7 +12357,7 @@ void sprint_double(char * s,double d){
 }
 
   string print_DOUBLE_(double d,GIAC_CONTEXT){
-#ifdef KHICAS
+#if defined KHICAS && !defined NSPIRE_NEWLIB
     {
       char s[256];
       sprint_double(s,d);
@@ -13822,6 +13918,8 @@ void sprint_double(char * s,double d){
 	return hexa_print_INT_(val);
       case 8:
 	return octal_print_INT_(val);
+      case 2:
+	return binary_print_INT_(val);
       default:
 	return print_INT_(val);
       }
@@ -14530,6 +14628,8 @@ void sprint_double(char * s,double d){
 
   string remove_extension(const string & chaine){
     int s=int(chaine.size());
+    if (s>4 && chaine.substr(s-4,4)==".tns")
+      return remove_extension(chaine.substr(0,s-4));
     int l=int(chaine.find_last_of('.',s));
     int ll=int(chaine.find_last_of('/',s));
     if (l>0 && l<s){
@@ -14993,6 +15093,9 @@ void sprint_double(char * s,double d){
     return res;
   }
 
+  gen real_object::subtract (const gen & g,GIAC_CONTEXT) const{
+    return substract(g,contextptr); 
+  }
   gen real_object::substract (const gen & g,GIAC_CONTEXT) const{
     switch (g.type){
     case _REAL:
@@ -15011,7 +15114,9 @@ void sprint_double(char * s,double d){
     }
     return gensizeerr(gettext("real_object + gen")+this->print(contextptr)+","+g.print(contextptr));
   }
-  
+  gen real_interval::subtract (const gen & g,GIAC_CONTEXT) const{
+    return substract(g,contextptr);
+  }
   gen real_interval::substract (const gen & g,GIAC_CONTEXT) const{
     switch (g.type){
     case _REAL:
@@ -16050,6 +16155,8 @@ void sprint_double(char * s,double d){
     static context * contextptr=0;
     if (!contextptr) contextptr=new context;
     context & C=*contextptr;
+    if (!strcmp(s,"caseval contextptr"))
+      return (const char *) contextptr;
     if (!strcmp(s,"shell off")){
       os_shell=false;
       return "shell off";
@@ -16072,14 +16179,27 @@ void sprint_double(char * s,double d){
       _efface_logo(vecteur(0),contextptr);
     }
     if (!strcmp(s,"*")){
+#ifdef NSPIRE_NEWLIB
+      if (0 && nspirelua){
+	xcas::Console_Disp(1,contextptr);
+	while (1){
+	  int key; GetKey(&key);
+	  if (1 || key==KEY_CTRL_EXE)
+	    break;
+	}
+      }
+      return "Done";
+#else
       int res=xcas::console_main(contextptr);
       S=printint(res);
       return S.c_str();
+#endif
     }
     if (!strcmp(s,"+")){
       char buf[4096]="def f(x):\n  return x*x\n";
       if (file_exists("temp.py")){
-	S=read_file("temp.py");
+	const char * ch=read_file("temp.py");
+	S=ch;
 	if (S.size()>sizeof(buf))
 	  S=S.substr(0,sizeof(buf)-1);
 	strcpy(buf,S.c_str());
@@ -16287,7 +16407,8 @@ void sprint_double(char * s,double d){
 	  last=tmp;
       }
       if (last.is_symb_of_sommet(at_pnt)){
-	xcas::displaygraph(g,&C);
+	if (os_shell)
+	  xcas::displaygraph(g,&C);
 	S="Graphic_object";
       }
       else {

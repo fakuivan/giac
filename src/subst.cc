@@ -1488,6 +1488,11 @@ namespace giac {
     gen a(a_orig);
     for (int i=begin;i<signed(primeargs.size());){
       gen g=simplify3(a,primeargs[i]);
+      if (g.type==_FRAC){
+	a=a*g;
+	primeargs[i]=primeargs[i]*g;
+	++i; continue;
+      }
       if (is_strictly_positive(r2e(-g,vars,contextptr),contextptr)){
 	g=-g; a=-a; primeargs[i]=-primeargs[i];
       }
@@ -2434,6 +2439,10 @@ namespace giac {
     }
     e=quotesubst(e,vabs,vabs2,contextptr);
     e=quotesubst(e,vabs,vabs2,contextptr); // second replacement because vabs2 might contain expression in vabs
+    vecteur ve(lop(e,at_exp));
+    ve=lop(ve,at_atan);
+    if (!ve.empty())
+      e=_exp2trig(e,contextptr); // exp(i*atan())
     e=recursive_normal(e,contextptr); 
     if (is_undef(e)) return e;
     if (!bases.empty())
@@ -2526,7 +2535,7 @@ namespace giac {
     }
     int te=taille(e,RAND_MAX);
     int tg=taille(g,10*te);
-    if (tg>=10*te)
+    if (tg>=10*te || lvar(g).size()>=3)
       return esave;
     // convert back to trig and atrig functions
     g=expln2trig(g,contextptr); 
@@ -2546,8 +2555,8 @@ namespace giac {
     }
     gen reg,img;
     reim(g,reg,img,contextptr);
-    reg=recursive_normal(re(g,contextptr),contextptr);
-    img=recursive_normal(im(g,contextptr),contextptr);
+    reg=recursive_normal(reg,contextptr);
+    img=recursive_normal(img,contextptr);
     if (s1){
       gen g1=normal(trigcos(reg,contextptr),contextptr)+cst_i*normal(trigcos(img,contextptr),contextptr);
       gen g2=normal(trigsin(reg,contextptr),contextptr)+cst_i*normal(trigsin(img,contextptr),contextptr);

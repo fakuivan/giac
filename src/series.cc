@@ -1780,7 +1780,7 @@ namespace giac {
 	  if (!pintegrate(s,t,contextptr))
 	    return false;
 	  gen remains,primit=sparse_poly12gen(s,x,remains,false);
-	  // then compose primit at bounds and substract
+	  // then compose primit at bounds and subtract
 	  primit=subst(primit,t,tempfv[3],false,contextptr)-subst(primit,t,tempfv[2],false,contextptr);
 	  if (!series__SPOL1(primit,x,lim_point,ordre,direction,s,contextptr))
 	    return false;
@@ -2147,10 +2147,29 @@ namespace giac {
     }
   }
 
+  void tri_rlvarx(vecteur & v){
+    int s=v.size();
+    for (;;){
+      bool ok=true;
+      for (int i=0;i<s-1;++i){
+	if (symb_size_less(v[i+1],v[i])){
+	  ok=false;
+	  swapgen(v[i],v[i+1]);
+	}
+      }
+      if (ok)
+	return;
+    }
+  }
+
   vecteur rlvarx(const gen &e,const gen & x){
     vecteur res;
     rlvarx(e,x,res);
+#ifdef FXCG
+    tri_rlvarx(res);
+#else
     gen_sort_f(res.begin(),res.end(),symb_size_less);
+#endif
     return res;
   }
 
@@ -2269,6 +2288,26 @@ namespace giac {
   gen limit_symbolic_preprocess(const gen & e0,const identificateur & x,const gen & lim_point,int direction,GIAC_CONTEXT){
     // FIXME: add support for int and sum
     gen e=factorial2gamma(e0,contextptr);
+    int trigs=loptab(e,sincostan_tab).size();
+    if (trigs>=2){
+      gen tmp=trigcos(e,contextptr);
+      int trigtmps=loptab(tmp,sincostan_tab).size();
+      if (trigtmps<trigs){
+	e=ratnormal(tmp);
+	trigs=loptab(e,sincostan_tab).size();
+      }
+      tmp=trigsin(e,contextptr);
+      trigtmps=loptab(tmp,sincostan_tab).size();
+      if (trigtmps<trigs){
+	e=ratnormal(tmp);
+	trigs=loptab(e,sincostan_tab).size();
+      }
+      tmp=trigtan(e,contextptr);
+      trigtmps=loptab(tmp,sincostan_tab).size();
+      if (trigtmps<trigs){
+	e=ratnormal(tmp);
+      }
+    }
     gen first_try=subst(e,x,lim_point,false,contextptr);
     first_try=simplifier(first_try,contextptr);
     if (!contains(lidnt(first_try),unsigned_inf)){
@@ -2557,7 +2596,7 @@ namespace giac {
 	if (first_try!=unsigned_inf)
 	  return first_try;
       }
-    }
+    } // end if vsign.empty()
     if (has_op(e,*at_surd) || has_op(e,*at_NTHROOT)){
       // FIXME: adjust using limit/direction information
       vecteur subst1,subst2;
@@ -2913,6 +2952,12 @@ namespace giac {
       c=coeff_ln[p-1];
       f=subst(it->_SYMBptr->feuille,faster_var,faster_var_subst,false,contextptr);
       faster_var_subst.push_back(pow(w,c,contextptr)*exp(normal(f-c*g,contextptr),contextptr));
+    }
+    // add original variable in faster_var/faster_var_subst
+    // otherwise we might miss replacements
+    if (faster_var.front().is_symb_of_sommet(at_exp) && faster_var.front()._SYMBptr->feuille==x){
+      faster_var.push_back(x);
+      faster_var_subst.push_back(ln(faster_var_subst.front(),contextptr));
     }
     // subst in original expression and make the asymptotic expansion
     double ordre=begin_ordre;

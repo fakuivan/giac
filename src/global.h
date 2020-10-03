@@ -101,9 +101,19 @@ inline double giac_log(double d){
 #include "tinymt32.h"
 #endif
 
+extern "C" int ctrl_c_interrupted(int exception);
+#if defined HAVE_LIBMICROPYTHON
+#include <string>
+// giac interface to micropython modules
+extern std::string python_console;
+#endif
+
+extern bool freezeturtle;
+
 #ifndef NO_NAMESPACE_GIAC
 namespace giac {
 #endif // ndef NO_NAMESPACE_GIAC
+  int dichotomic_search(const char * const * tab,unsigned tab_size,const char * s);
   void opaque_double_copy(void * source,void * target);
   double opaque_double_val(const void * source);
 
@@ -252,6 +262,9 @@ Boolean isLegalUTF8Sequence(const UTF8 *source, const UTF8 *sourceEnd);
   extern int GCDHEU_DEGREE; // max degree allowed inside gcdheu
   extern int MODFACTOR_PRIMES; // number of primes used for factorization
   extern int NTL_MODGCD; // lowest degree for NTL univariate modular GCD 
+  extern int NTL_RESULTANT; // lowest degree for NTL univariate resultant 
+  extern int NTL_XGCD; // lowest degree for NTL univariate extended GCD over Z
+  extern int MODRESULTANT; // lowest degree for modular resultant 
   extern int HGCD; // lowest degree for half gcd call
   extern int HENSEL_QUADRATIC_POWER; // above #steps do quadratic Hensel lift
   extern int KARAMUL_SIZE; // Use Karatsuba multiplication if degree is >
@@ -404,6 +417,7 @@ throw(std::runtime_error("Stopped by user interruption.")); \
   vecteur * keywords_vecteur_ptr(); // idnt assigned to a commandname for localization, like mediatrice for perpen_bissector
 
   class context;
+  extern const giac::context * python_contextptr;
   
   struct debug_struct {
     int indent_spaces;
@@ -967,7 +981,7 @@ throw(std::runtime_error("Stopped by user interruption.")); \
 
   void read_config(const std::string & name,GIAC_CONTEXT,bool verbose=true);
   void protected_read_config(GIAC_CONTEXT,bool verbose=true);
-  vecteur remove_multiples(vecteur & v); // sort v and return list without multiple occurences
+  vecteur remove_multiples(vecteur & v); // sort v and return list without multiple occurrences
   int equalposcomp(const std::vector<int> v,int i);
   int equalposcomp(const std::vector<short int> v,int i);
   int equalposcomp(int tab[],int f);

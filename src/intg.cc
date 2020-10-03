@@ -58,6 +58,10 @@ using namespace std;
 #include <gsl/gsl_errno.h>
 #endif
 
+#ifdef HAVE_LIBBERNMM
+#include <bern_rat.h>
+#endif
+
 #ifndef NO_NAMESPACE_GIAC
 namespace giac {
 #endif // ndef NO_NAMESPACE_GIAC
@@ -390,6 +394,8 @@ namespace giac {
     if (args.type!=_VECT || args._VECTptr->size()!=2)
       return gensizeerr(contextptr);
     gen a=args._VECTptr->front(),aa,b=args._VECTptr->back(),c;
+    if (a.is_symb_of_sommet(at_abs) || a.is_symb_of_sommet(at_exp))
+      return pow(a,inv(b,contextptr),contextptr);
     if (is_equal(a)){
       gen a0=a._SYMBptr->feuille[0],a1=a._SYMBptr->feuille[1];
       return symbolic(at_equal,makesequence(_surd(makesequence(a0,b),contextptr),_surd(makesequence(a1,b),contextptr)));
@@ -2548,6 +2554,14 @@ namespace giac {
 	return res;
     }
     // Step1: detection of some unary_op[linear fcn]
+    if (e.is_symb_of_sommet(at_inv) && e._SYMBptr->feuille.is_symb_of_sommet(at_pow)){
+      gen f=e._SYMBptr->feuille._SYMBptr->feuille;
+      if (f.type==_VECT && f._VECTptr->size()==2){
+	gen b=f._VECTptr->back();
+	if (!is_integer(b) && b.type!=_FRAC)
+	  e=symbolic(at_pow,makevecteur(f._VECTptr->front(),-b));
+      }
+    }
     unary_function_ptr u=e._SYMBptr->sommet;
     gen f=e._SYMBptr->feuille,a,b;
     // particular case for ^, _FUNCnd arg must be constant
@@ -2646,7 +2660,8 @@ namespace giac {
 	  continue;
 	gen df=derive(*it,gen_x,contextptr);
 	gen tmprem;
-	fu=ratnormal(rdiv(e,df,contextptr),contextptr);
+	fu=rdiv(e,df,contextptr);
+	fu=recursive_ratnormal(fu,contextptr);
 	fu=eval(fu,1,contextptr);
 	if ((is_undef(fu) || is_inf(fu)) && is_zero(ratnormal(df,contextptr))){
 	  // *it is constant -> find the value
@@ -4130,8 +4145,10 @@ namespace giac {
       }
       if (approxint_exact(f,x,contextptr)){
 	gen r,F=linear_integrate(f,x,r,contextptr);
-	value=subst(F,x,b,false,contextptr)-subst(F,x,a,false,contextptr);
-	return true;
+	if (is_zero(r)){
+	  value=subst(F,x,b,false,contextptr)-subst(F,x,a,false,contextptr);
+	  return true;
+	}
       }
     }
     // adaptive integration, cf. Hairer
@@ -4433,7 +4450,7 @@ namespace giac {
 *		If P=Sigma a_k x^k then write linear system for a_k
 *		Columns of the matrix of the system are lines
 *		of the Pascal triangle without the first element
-*		(since we must substract identity matrix to the triangle)
+*		(since we must subtract identity matrix to the triangle)
 *		a_1 a_2 a_3 ... a_n+1		coeff of Q
 *		1   1   1	1	X^0
 *		0   2	3	n+1	X^1
@@ -5408,6 +5425,13 @@ namespace giac {
   static define_unary_function_eval_quoted (__Sum,&_Sum,_Sum_s);
   define_unary_function_ptr5( at_Sum ,alias_at_Sum,&__Sum,_QUOTE_ARGUMENTS,true);
 
+  void fourier_assume(const gen &n,GIAC_CONTEXT){
+    if (n.type==_IDNT && eval(n,1,contextptr)==n){
+      *logptr(contextptr) << "Running assume(" << n << ",integer)" << '\n';
+      sto(gen(makevecteur(change_subtype(2,1)),_ASSUME__VECT),n,contextptr);
+    }
+  }
+
   gen _wz_certificate(const gen & args,GIAC_CONTEXT) {
     if ( args.type==_STRNG && args.subtype==-1) return  args;
     gen F,dF,G,n(n__IDNT_e),k(k__IDNT_e);
@@ -5422,6 +5446,8 @@ namespace giac {
     }
     else
       F=args;
+    fourier_assume(n,contextptr);
+    fourier_assume(k,contextptr);
     dF=simplify(subst(F,n,n+1,false,contextptr)-F,contextptr);
     G=_sum(makesequence(dF,k),contextptr);
     if (lop(G,at_sum).empty()){
@@ -5509,6 +5535,37 @@ namespace giac {
       if (!all)
 	return zero;
       --n;
+    }
+    if (!all){
+      if (n==2)
+	return inv(6,context0);
+      if (0)
+	return bernoulli_rat(n);
+#ifdef HAVE_LIBBERNMM
+      if (n>=
+#ifdef HAVE_LIBPARI
+	  1e5
+#else
+	  0
+#endif
+	  ){
+	mpq_t resq;
+	mpq_init(resq);
+	bernmm::bern_rat(resq,x.val,threads);
+	mpz_t num,den;
+	mpz_init(num); mpz_init(den);
+	mpq_get_num(num,resq);
+	mpq_get_den(den,resq);
+	mpq_clear(resq);
+	gen numer(num),denom(den);
+	mpz_clear(num); mpz_clear(den);
+	return numer/denom;
+      }
+#endif
+#ifdef HAVE_LIBPARI
+      return _pari(makesequence(string2gen("bernfrac",false),n),context0);
+#endif
+      return bernoulli_rat(n);
     }
     gen a(plus_one);
     gen b(rdiv(1-n,plus_two,context0));
@@ -6175,13 +6232,6 @@ namespace giac {
   static const char _ibpdv_s []="ibpdv";
   static define_unary_function_eval (__ibpdv,&_ibpdv,_ibpdv_s);
   define_unary_function_ptr5( at_ibpdv ,alias_at_ibpdv,&__ibpdv,0,true);
-
-  void fourier_assume(const gen &n,GIAC_CONTEXT){
-    if (n.type==_IDNT && eval(n,1,contextptr)==n){
-      *logptr(contextptr) << "Running assume(" << n << ",integer)" << '\n';
-      sto(gen(makevecteur(change_subtype(2,1)),_ASSUME__VECT),n,contextptr);
-    }
-  }
 
   gen fourier_an(const gen & f,const gen & x,const gen & T,const gen & n,const gen & a,GIAC_CONTEXT){
     gen primi,iT=inv(T,contextptr);
